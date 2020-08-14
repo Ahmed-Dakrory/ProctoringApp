@@ -1,0 +1,6 @@
+<RCC>
+  <qresource prefix="imageface">
+    <file>face.png</file>
+    <file>1499285810732.jpg</file>
+  </qresource>
+</RCC>
