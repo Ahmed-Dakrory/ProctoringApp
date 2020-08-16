@@ -51,6 +51,7 @@ class GUI(QMainWindow):
         self.token = ''
         self.Username = ''
         self.IsVerified = None
+        self.examId=''
 
 
         self.TestName = ''
@@ -96,20 +97,31 @@ class GUI(QMainWindow):
         
         
     def ReduceWindowAndMove(self):
-        self.hide()
-        sizeObject = QDesktopWidget().screenGeometry(-1)
-        self.ex = QMainWindow()
-        uic.loadUi(self.dir_path+'\mainCamera.ui', self.ex) # Load the .ui file
+        
+        headers = {'authorization': "Bearer "+str(self.token)}
+        dataNew = {"status": True}
+        UrlPostData = 'http://34.243.127.227:3001/api/test/allow-test-student/'+self.examId
+        response = requests.put(UrlPostData,json=dataNew,headers=headers)
+        self.message = response.json()['message']
+        print(self.message)
+        if self.message == 'Done':
+            self.hide()
+            sizeObject = QDesktopWidget().screenGeometry(-1)
+            self.ex = QMainWindow()
+            uic.loadUi(self.dir_path+'\mainCamera.ui', self.ex) # Load the .ui file
 
-        self.ex.setAttribute(Qt.WA_TranslucentBackground)
-        self.ex.setWindowFlags(Qt.FramelessWindowHint)
+            self.ex.setAttribute(Qt.WA_TranslucentBackground)
+            self.ex.setWindowFlags(Qt.FramelessWindowHint)
 
 
-        self.ex.show()
-        self.ex.move(sizeObject.width()-250,sizeObject.height()-300)
-        th = ThreadCameraVideo(self.ex)
-        th.changePixmap.connect(self.setImageVideo)
-        th.start()
+            self.ex.show()
+            self.ex.move(sizeObject.width()-250,sizeObject.height()-300)
+            th = ThreadCameraVideo(self.ex)
+            th.changePixmap.connect(self.setImageVideo)
+            th.start()
+        else:
+            print('Error')
+
 
     def close(self):
         QCoreApplication.exit(0)
@@ -213,7 +225,11 @@ class GUI(QMainWindow):
         for ck in cookies:
             if ck.name == 'token':
                 self.token = ck.value
+
+            if ck.name == 'test':
+                self.examId = ck.value
                 
+
         dataNew = {"token": self.token}
         UrlPostData = 'http://34.243.127.227:3001/api/user/me'
         
@@ -224,16 +240,16 @@ class GUI(QMainWindow):
             
             headers = {'authorization': "Bearer "+str(self.token)}
             dataNew = {"token": self.token}
-            #UrlPostData = 'http://34.243.127.227:3001/api/test/1'
-            #response = requests.get(UrlPostData,json=dataNew,headers=headers)
-            self.TestName = '' #response.json()['test']['name']
-            self.TestDuration = '' #(response.json()['test']['duration'])
+            UrlPostData = 'http://34.243.127.227:3001/api/test/test-requirements/'+self.examId
+            response = requests.get(UrlPostData,json=dataNew,headers=headers)
+            self.TestName = response.json()['test']['name']
+            self.TestDuration = str(response.json()['test']['duration']) +' m'
             
             
             self.username.setText('hi, '+self.Username)
             # print(self.Username)
             self.testname_label.setText(self.TestName)
-            self.testduration_label.setText(str(self.TestDuration) )
+            self.testduration_label.setText((self.TestDuration) )
 
             loop = QEventLoop()
             QTimer.singleShot(500, loop.quit)
@@ -452,7 +468,7 @@ class ThreadCamera(QThread):
 
     def saveImage(self,image):
         # Save the image to the server with this id
-        retval, buffer = cv2.imencode('.jpg', image)
+        retval, buffer = cv2.imencode('.png', image)
         jpg_as_text = base64.b64encode(buffer) 
         files = {'files': jpg_as_text}
         headers = {'authorization': "Bearer "+str(self.token)}
