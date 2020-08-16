@@ -48,14 +48,15 @@ class GUI(QMainWindow):
         self.checkInternetTrial = 0
         self.appctxt = appctxt
         # User Session Token
-        self.token = ''
+        self.token = None
         self.Username = ''
         self.IsVerified = None
-        self.examId=''
+        self.examId = None
 
 
         self.TestName = ''
         self.TestDuration = ''
+        self.AllNotAllowed = None
 
 
         uic.loadUi(self.dir_path+'\main.ui', self) # Load the .ui file
@@ -233,7 +234,7 @@ class GUI(QMainWindow):
         dataNew = {"token": self.token}
         UrlPostData = 'http://34.243.127.227:3001/api/user/me'
         
-        if self.token != None:
+        if self.token != None and self.examId!=None:
             response = requests.post(UrlPostData,json=dataNew)
             self.Username = response.json()['user']['username']
             self.IsVerified = response.json()['user']['active']
@@ -244,6 +245,7 @@ class GUI(QMainWindow):
             response = requests.get(UrlPostData,json=dataNew,headers=headers)
             self.TestName = response.json()['test']['name']
             self.TestDuration = str(response.json()['test']['duration']) +' m'
+            self.AllNotAllowed = response.json()['testWhiteListApps']
             
             
             self.username.setText('hi, '+self.Username)
@@ -258,7 +260,7 @@ class GUI(QMainWindow):
             self.goNextStep()
         else:
 
-            self.goToErrorPageWebsite("Please Login to the website")
+            self.goToErrorPageWebsite("Please go to the Exam From the Website")
 
 
     def goToErrorPageWebsite(self,statment):
@@ -406,13 +408,14 @@ class GUI(QMainWindow):
         loop.exec_()
 
     def closeAllBlackList(self):
-        PROCNAME = "notepad.exe"
+        # PROCNAME = "notepad.exe"
 
         for proc in psutil.process_iter():
             # check whether the process name matches
             # print(proc.name())
-            if proc.name() == PROCNAME:
-                proc.kill()
+            for program in self.AllNotAllowed:
+                if proc.name() == program['SystemApp']['serviceName']:
+                    proc.kill()
 
     @pyqtSlot(QImage)
     def setImageVideo(self, image):
@@ -465,20 +468,37 @@ class ThreadCamera(QThread):
     def __init__(self,window,token):
         super(ThreadCamera,self).__init__(window)
         self.token = token
+        self.FinalImage = 5
+        self.AllImages = []
 
-    def saveImage(self,image):
+    def saveImage(self,direction,image):
         # Save the image to the server with this id
-        retval, buffer = cv2.imencode('.png', image)
-        jpg_as_text = base64.b64encode(buffer) 
-        files = {'files': jpg_as_text}
+        imencoded = cv2.imencode('.jpg', image)[1]
+        fileName = direction+'image.jpg'
+        print(fileName)
+        files = {'files': (fileName, imencoded.tostring(), 'image/jpeg', {'Expires': '0'})}
         headers = {'authorization': "Bearer "+str(self.token)}
         sendThread = threading.Thread(target=self.sendImage, args=(files,headers,))
         sendThread.start()
         
     def sendImage(self,files,headers):
-        response = requests.post('http://34.243.127.227:3001/api/upload/files',files = files,headers=headers)
+        try:
+            response = requests.post('http://34.243.127.227:3001/api/upload/files',files = files,headers=headers,timeout = 3)
+            self.AllImages.append(response.json()['files'][0]['name'])
+            # print(response.json()['files'][0]['name'])
+        except:
+            pass
+        self.FinalImage -= 1
+        if self.FinalImage == 0:
+            print(self.AllImages)
+            headers = {'authorization': "Bearer "+str(self.token)}
+            dataNew = {"faceImages":self.AllImages}
 
-        print(response.text)
+            UrlPostData = 'http://34.243.127.227:3001/api/user/proctoring-images'
+            response = requests.post(UrlPostData,json=dataNew,headers=headers)
+            # print(response.text)
+        # print(self.FinalImage)
+        # print(self.AllImages)
 
     def run(self):
         try:
@@ -501,6 +521,7 @@ class ThreadCamera(QThread):
                 gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
                 faces = face_cascade.detectMultiScale(gray, 1.3, 5)
                 for (x,y,w,h) in faces:
+                    frameWithoutRec = frame
                     frame = cv2.rectangle(frame,(x,y),(x+w,y+h),(255,0,0),2)
                     # print(w*h)
                     if w*h <100000:
@@ -510,7 +531,7 @@ class ThreadCamera(QThread):
                             count -=1
                             # self.setPose.emit('Look '+pose[pose_index]+" "+str(count)+"/5")
                             self.setPose.emit('Look '+pose[pose_index])
-                            self.saveImage(frame)
+                            self.saveImage(pose[pose_index],frameWithoutRec)
                             if count == 0:
                                 count = 1
                                 pose_index+=1
