@@ -1063,7 +1063,7 @@ qproperty-alignment: AlignCenter;
        </property>
       </widget>
       <widget class="QLabel" name="faceBackground">
-      <property name="geometry">
+       <property name="geometry">
         <rect>
          <x>20</x>
          <y>10</y>
@@ -1071,21 +1071,16 @@ qproperty-alignment: AlignCenter;
          <height>301</height>
         </rect>
        </property>
-      <property name="text">
-       <string/>
-      </property>
-      <property name="pixmap">
-       <pixmap>imageface/face.png</pixmap>
-      </property>
-      <property name="scaledContents">
-       <bool>true</bool>
-      </property>
-      <property name="text">
+       <property name="text">
         <string/>
        </property>
-     </widget>
-
-     
+       <property name="pixmap">
+        <pixmap>imageface/face.png</pixmap>
+       </property>
+       <property name="scaledContents">
+        <bool>true</bool>
+       </property>
+      </widget>
       <widget class="QLabel" name="followPose">
        <property name="geometry">
         <rect>
@@ -1134,6 +1129,31 @@ border-color: #FFF6F9;</string>
       </property>
       <property name="text">
        <string/>
+      </property>
+      <property name="scaledContents">
+       <bool>true</bool>
+      </property>
+     </widget>
+     <widget class="QLabel" name="wrongLabel">
+      <property name="geometry">
+       <rect>
+        <x>390</x>
+        <y>200</y>
+        <width>60</width>
+        <height>60</height>
+       </rect>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>200</width>
+        <height>200</height>
+       </size>
+      </property>
+      <property name="text">
+       <string/>
+      </property>
+      <property name="pixmap">
+       <pixmap>imageface/wrong.png</pixmap>
       </property>
       <property name="scaledContents">
        <bool>true</bool>
