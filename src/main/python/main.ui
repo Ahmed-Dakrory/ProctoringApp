@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>781</width>
-    <height>459</height>
+    <width>1047</width>
+    <height>537</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -20,14 +20,14 @@
    <string>MainWindow</string>
   </property>
   <property name="styleSheet">
-   <string notr="true">QMainWindow{background-color: #2f3133;}</string>
+   <string notr="true">QMainWindow{background-color: rgb(7, 7, 7);}</string>
   </property>
   <widget class="QWidget" name="centralwidget">
    <widget class="QPushButton" name="predictButton">
     <property name="geometry">
      <rect>
-      <x>620</x>
-      <y>410</y>
+      <x>910</x>
+      <y>490</y>
       <width>111</width>
       <height>31</height>
      </rect>
@@ -60,10 +60,10 @@
    <widget class="QStackedWidget" name="pagerWindow">
     <property name="geometry">
      <rect>
-      <x>210</x>
+      <x>190</x>
       <y>50</y>
-      <width>561</width>
-      <height>321</height>
+      <width>811</width>
+      <height>391</height>
      </rect>
     </property>
     <property name="styleSheet">
@@ -76,13 +76,13 @@ border-color: #FFF6F9;
 </string>
     </property>
     <property name="currentIndex">
-     <number>0</number>
+     <number>3</number>
     </property>
     <widget class="QWidget" name="page0">
      <widget class="QLabel" name="internetChecking">
       <property name="geometry">
        <rect>
-        <x>170</x>
+        <x>290</x>
         <y>80</y>
         <width>261</width>
         <height>231</height>
@@ -98,10 +98,10 @@ border-color: #FFF6F9;
      <widget class="QLabel" name="checkDevice_2">
       <property name="geometry">
        <rect>
-        <x>160</x>
+        <x>270</x>
         <y>10</y>
         <width>291</width>
-        <height>61</height>
+        <height>41</height>
        </rect>
       </property>
       <property name="styleSheet">
@@ -121,61 +121,12 @@ qproperty-alignment: AlignCenter;
        <string>Checking Internet Connection</string>
       </property>
      </widget>
-     <widget class="QLabel" name="label_4">
-      <property name="geometry">
-       <rect>
-        <x>0</x>
-        <y>0</y>
-        <width>561</width>
-        <height>321</height>
-       </rect>
-      </property>
-      <property name="styleSheet">
-       <string notr="true">background-color: rgba(235, 235, 235, 0.19);
-border-style: inset;
-border-width: 0.5px;
-border-radius: 5px;
-border-color: #FFF6F9;</string>
-      </property>
-      <property name="text">
-       <string/>
-      </property>
-      <property name="scaledContents">
-       <bool>true</bool>
-      </property>
-     </widget>
-     <zorder>label_4</zorder>
-     <zorder>internetChecking</zorder>
-     <zorder>checkDevice_2</zorder>
     </widget>
     <widget class="QWidget" name="page1">
-     <widget class="QLabel" name="label_2">
-      <property name="geometry">
-       <rect>
-        <x>0</x>
-        <y>0</y>
-        <width>561</width>
-        <height>321</height>
-       </rect>
-      </property>
-      <property name="styleSheet">
-       <string notr="true">background-color: rgba(235, 235, 235, 0.19);
-border-style: inset;
-border-width: 0.5px;
-border-radius: 5px;
-border-color: #FFF6F9;</string>
-      </property>
-      <property name="text">
-       <string/>
-      </property>
-      <property name="scaledContents">
-       <bool>true</bool>
-      </property>
-     </widget>
      <widget class="QLabel" name="label">
       <property name="geometry">
        <rect>
-        <x>160</x>
+        <x>310</x>
         <y>80</y>
         <width>261</width>
         <height>231</height>
@@ -194,7 +145,7 @@ border-color: #FFF6F9;</string>
      <widget class="QLabel" name="checkDevice_3">
       <property name="geometry">
        <rect>
-        <x>110</x>
+        <x>270</x>
         <y>10</y>
         <width>341</width>
         <height>61</height>
@@ -222,10 +173,10 @@ qproperty-alignment: AlignCenter;
      <widget class="QLabel" name="checkDevice">
       <property name="geometry">
        <rect>
-        <x>150</x>
-        <y>50</y>
-        <width>291</width>
-        <height>61</height>
+        <x>220</x>
+        <y>40</y>
+        <width>451</width>
+        <height>51</height>
        </rect>
       </property>
       <property name="styleSheet">
@@ -248,10 +199,10 @@ qproperty-alignment: AlignCenter;
      <widget class="QGroupBox" name="groupBox_2">
       <property name="geometry">
        <rect>
-        <x>10</x>
-        <y>150</y>
-        <width>541</width>
-        <height>131</height>
+        <x>30</x>
+        <y>170</y>
+        <width>781</width>
+        <height>201</height>
        </rect>
       </property>
       <property name="styleSheet">
@@ -267,10 +218,10 @@ border-width: 0px;
       <widget class="QLabel" name="camera">
        <property name="geometry">
         <rect>
-         <x>20</x>
-         <y>10</y>
-         <width>40</width>
-         <height>40</height>
+         <x>10</x>
+         <y>90</y>
+         <width>31</width>
+         <height>31</height>
         </rect>
        </property>
        <property name="maximumSize">
@@ -293,8 +244,8 @@ border-width: 0px;
        <property name="geometry">
         <rect>
          <x>0</x>
-         <y>70</y>
-         <width>81</width>
+         <y>130</y>
+         <width>51</width>
          <height>20</height>
         </rect>
        </property>
@@ -323,10 +274,10 @@ margin-bottom:7px;</string>
       <widget class="QLabel" name="mouse">
        <property name="geometry">
         <rect>
-         <x>110</x>
-         <y>10</y>
-         <width>40</width>
-         <height>40</height>
+         <x>90</x>
+         <y>90</y>
+         <width>31</width>
+         <height>31</height>
         </rect>
        </property>
        <property name="maximumSize">
@@ -348,10 +299,10 @@ margin-bottom:7px;</string>
       <widget class="QLabel" name="keyboard">
        <property name="geometry">
         <rect>
-         <x>190</x>
-         <y>0</y>
-         <width>60</width>
-         <height>60</height>
+         <x>170</x>
+         <y>80</y>
+         <width>51</width>
+         <height>51</height>
         </rect>
        </property>
        <property name="maximumSize">
@@ -373,9 +324,9 @@ margin-bottom:7px;</string>
       <widget class="QLabel" name="bar_mouse">
        <property name="geometry">
         <rect>
-         <x>90</x>
-         <y>70</y>
-         <width>81</width>
+         <x>60</x>
+         <y>130</y>
+         <width>71</width>
          <height>20</height>
         </rect>
        </property>
@@ -404,8 +355,8 @@ margin-bottom:7px;</string>
       <widget class="QLabel" name="success_mouse">
        <property name="geometry">
         <rect>
-         <x>160</x>
-         <y>70</y>
+         <x>130</x>
+         <y>130</y>
          <width>21</width>
          <height>21</height>
         </rect>
@@ -437,8 +388,8 @@ margin-bottom:7px;</string>
       <widget class="QLabel" name="bar_key">
        <property name="geometry">
         <rect>
-         <x>180</x>
-         <y>70</y>
+         <x>150</x>
+         <y>130</y>
          <width>81</width>
          <height>20</height>
         </rect>
@@ -468,8 +419,8 @@ margin-bottom:7px;</string>
       <widget class="QLabel" name="success_key">
        <property name="geometry">
         <rect>
-         <x>250</x>
-         <y>70</y>
+         <x>230</x>
+         <y>130</y>
          <width>21</width>
          <height>21</height>
         </rect>
@@ -501,8 +452,8 @@ margin-bottom:7px;</string>
       <widget class="QLabel" name="success_cam">
        <property name="geometry">
         <rect>
-         <x>70</x>
-         <y>70</y>
+         <x>50</x>
+         <y>130</y>
          <width>21</width>
          <height>21</height>
         </rect>
@@ -534,8 +485,8 @@ margin-bottom:7px;</string>
       <widget class="QLabel" name="success_speaker">
        <property name="geometry">
         <rect>
-         <x>340</x>
-         <y>70</y>
+         <x>320</x>
+         <y>130</y>
          <width>21</width>
          <height>21</height>
         </rect>
@@ -570,8 +521,8 @@ margin-bottom:7px;</string>
       <widget class="QLabel" name="bar_speaker">
        <property name="geometry">
         <rect>
-         <x>270</x>
-         <y>70</y>
+         <x>240</x>
+         <y>130</y>
          <width>81</width>
          <height>20</height>
         </rect>
@@ -601,9 +552,9 @@ margin-bottom:7px;</string>
       <widget class="QLabel" name="speaker">
        <property name="geometry">
         <rect>
-         <x>290</x>
-         <y>10</y>
-         <width>41</width>
+         <x>280</x>
+         <y>90</y>
+         <width>31</width>
          <height>31</height>
         </rect>
        </property>
@@ -617,7 +568,7 @@ margin-bottom:7px;</string>
         <string/>
        </property>
        <property name="pixmap">
-        <pixmap>imageface/speak.png</pixmap>
+        <pixmap>imageface/speaker.png</pixmap>
        </property>
        <property name="scaledContents">
         <bool>true</bool>
@@ -626,9 +577,9 @@ margin-bottom:7px;</string>
       <widget class="QLabel" name="bar_micro">
        <property name="geometry">
         <rect>
-         <x>360</x>
-         <y>70</y>
-         <width>81</width>
+         <x>340</x>
+         <y>130</y>
+         <width>91</width>
          <height>20</height>
         </rect>
        </property>
@@ -657,10 +608,10 @@ margin-bottom:7px;</string>
       <widget class="QLabel" name="micro">
        <property name="geometry">
         <rect>
-         <x>380</x>
-         <y>10</y>
-         <width>41</width>
-         <height>41</height>
+         <x>370</x>
+         <y>90</y>
+         <width>31</width>
+         <height>31</height>
         </rect>
        </property>
        <property name="maximumSize">
@@ -673,7 +624,7 @@ margin-bottom:7px;</string>
         <string/>
        </property>
        <property name="pixmap">
-        <pixmap>imageface/microphone.png</pixmap>
+        <pixmap>imageface/microph.png</pixmap>
        </property>
        <property name="scaledContents">
         <bool>true</bool>
@@ -683,7 +634,7 @@ margin-bottom:7px;</string>
        <property name="geometry">
         <rect>
          <x>430</x>
-         <y>70</y>
+         <y>130</y>
          <width>21</width>
          <height>21</height>
         </rect>
@@ -715,8 +666,8 @@ margin-bottom:7px;</string>
       <widget class="QLabel" name="system">
        <property name="geometry">
         <rect>
-         <x>470</x>
-         <y>10</y>
+         <x>660</x>
+         <y>80</y>
          <width>41</width>
          <height>41</height>
         </rect>
@@ -737,43 +688,12 @@ margin-bottom:7px;</string>
         <bool>true</bool>
        </property>
       </widget>
-      <widget class="QLabel" name="bar_system">
-       <property name="geometry">
-        <rect>
-         <x>450</x>
-         <y>70</y>
-         <width>81</width>
-         <height>20</height>
-        </rect>
-       </property>
-       <property name="maximumSize">
-        <size>
-         <width>200</width>
-         <height>200</height>
-        </size>
-       </property>
-       <property name="styleSheet">
-        <string notr="true">background-color: rgb(44, 211, 32);
-height:30px;
-margin-top:7px;
-margin-bottom:7px;</string>
-       </property>
-       <property name="text">
-        <string/>
-       </property>
-       <property name="scaledContents">
-        <bool>false</bool>
-       </property>
-       <property name="margin">
-        <number>0</number>
-       </property>
-      </widget>
       <widget class="QGroupBox" name="groupBox_4">
        <property name="geometry">
         <rect>
          <x>0</x>
-         <y>70</y>
-         <width>531</width>
+         <y>130</y>
+         <width>741</width>
          <height>21</height>
         </rect>
        </property>
@@ -786,12 +706,105 @@ margin-bottom:7px;</string>
        <property name="title">
         <string/>
        </property>
+       <widget class="QLabel" name="bar_hard">
+        <property name="geometry">
+         <rect>
+          <x>450</x>
+          <y>0</y>
+          <width>91</width>
+          <height>20</height>
+         </rect>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>200</width>
+          <height>200</height>
+         </size>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">background-color: rgb(44, 211, 32);
+height:30px;
+margin-top:7px;
+margin-bottom:7px;</string>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+        <property name="scaledContents">
+         <bool>false</bool>
+        </property>
+        <property name="margin">
+         <number>0</number>
+        </property>
+       </widget>
+       <widget class="QLabel" name="bar_screen">
+        <property name="geometry">
+         <rect>
+          <x>560</x>
+          <y>0</y>
+          <width>81</width>
+          <height>20</height>
+         </rect>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>200</width>
+          <height>200</height>
+         </size>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">background-color: rgb(44, 211, 32);
+height:30px;
+margin-top:7px;
+margin-bottom:7px;</string>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+        <property name="scaledContents">
+         <bool>false</bool>
+        </property>
+        <property name="margin">
+         <number>0</number>
+        </property>
+       </widget>
+       <widget class="QLabel" name="bar_system">
+        <property name="geometry">
+         <rect>
+          <x>660</x>
+          <y>0</y>
+          <width>81</width>
+          <height>20</height>
+         </rect>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>200</width>
+          <height>200</height>
+         </size>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">background-color: rgb(44, 211, 32);
+height:30px;
+margin-top:7px;
+margin-bottom:7px;</string>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+        <property name="scaledContents">
+         <bool>false</bool>
+        </property>
+        <property name="margin">
+         <number>0</number>
+        </property>
+       </widget>
       </widget>
       <widget class="QLabel" name="fail2">
        <property name="geometry">
         <rect>
-         <x>70</x>
-         <y>70</y>
+         <x>50</x>
+         <y>130</y>
          <width>21</width>
          <height>21</height>
         </rect>
@@ -824,8 +837,8 @@ margin-bottom:7px;</string>
       <widget class="QLabel" name="fail3">
        <property name="geometry">
         <rect>
-         <x>160</x>
-         <y>70</y>
+         <x>130</x>
+         <y>130</y>
          <width>21</width>
          <height>21</height>
         </rect>
@@ -858,8 +871,8 @@ margin-bottom:7px;</string>
       <widget class="QLabel" name="fail4">
        <property name="geometry">
         <rect>
-         <x>250</x>
-         <y>70</y>
+         <x>230</x>
+         <y>130</y>
          <width>21</width>
          <height>21</height>
         </rect>
@@ -892,8 +905,8 @@ margin-bottom:7px;</string>
       <widget class="QLabel" name="fail5">
        <property name="geometry">
         <rect>
-         <x>340</x>
-         <y>70</y>
+         <x>320</x>
+         <y>130</y>
          <width>21</width>
          <height>21</height>
         </rect>
@@ -923,11 +936,11 @@ margin-bottom:7px;</string>
         <number>0</number>
        </property>
       </widget>
-      <widget class="QLabel" name="fail6">
+      <widget class="QLabel" name="fail6_2">
        <property name="geometry">
         <rect>
-         <x>430</x>
-         <y>70</y>
+         <x>540</x>
+         <y>130</y>
          <width>21</width>
          <height>21</height>
         </rect>
@@ -957,9 +970,193 @@ margin-bottom:7px;</string>
         <number>0</number>
        </property>
       </widget>
+      <widget class="QLabel" name="micro_2">
+       <property name="geometry">
+        <rect>
+         <x>470</x>
+         <y>80</y>
+         <width>41</width>
+         <height>41</height>
+        </rect>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>200</width>
+         <height>200</height>
+        </size>
+       </property>
+       <property name="text">
+        <string/>
+       </property>
+       <property name="pixmap">
+        <pixmap>imageface/hard.png</pixmap>
+       </property>
+       <property name="scaledContents">
+        <bool>true</bool>
+       </property>
+      </widget>
+      <widget class="QLabel" name="success_hard">
+       <property name="geometry">
+        <rect>
+         <x>540</x>
+         <y>130</y>
+         <width>21</width>
+         <height>21</height>
+        </rect>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>200</width>
+         <height>200</height>
+        </size>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">background-color:rgb(44, 211, 32);
+        border-width: 3px;
+        border-radius: 10px;
+        border-color: rgba(255, 255, 255, 0);
+
+</string>
+       </property>
+       <property name="text">
+        <string/>
+       </property>
+       <property name="scaledContents">
+        <bool>true</bool>
+       </property>
+       <property name="margin">
+        <number>0</number>
+       </property>
+      </widget>
+      <widget class="QLabel" name="success_screen">
+       <property name="geometry">
+        <rect>
+         <x>640</x>
+         <y>130</y>
+         <width>21</width>
+         <height>21</height>
+        </rect>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>200</width>
+         <height>200</height>
+        </size>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">background-color:rgb(44, 211, 32);
+        border-width: 3px;
+        border-radius: 10px;
+        border-color: rgba(255, 255, 255, 0);
+
+</string>
+       </property>
+       <property name="text">
+        <string/>
+       </property>
+       <property name="scaledContents">
+        <bool>true</bool>
+       </property>
+       <property name="margin">
+        <number>0</number>
+       </property>
+      </widget>
+      <widget class="QLabel" name="fail6_3">
+       <property name="geometry">
+        <rect>
+         <x>640</x>
+         <y>130</y>
+         <width>21</width>
+         <height>21</height>
+        </rect>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>200</width>
+         <height>200</height>
+        </size>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">background-color:rgb(209, 207, 207);
+        border-style: outset;
+        border-width: 1px;
+        border-radius: 10px;
+        border-color: rgba(255, 255, 255, 0);
+
+</string>
+       </property>
+       <property name="text">
+        <string/>
+       </property>
+       <property name="scaledContents">
+        <bool>true</bool>
+       </property>
+       <property name="margin">
+        <number>0</number>
+       </property>
+      </widget>
+      <widget class="QLabel" name="fail6">
+       <property name="geometry">
+        <rect>
+         <x>430</x>
+         <y>130</y>
+         <width>21</width>
+         <height>21</height>
+        </rect>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>200</width>
+         <height>200</height>
+        </size>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">background-color:rgb(209, 207, 207);
+        border-style: outset;
+        border-width: 1px;
+        border-radius: 10px;
+        border-color: rgba(255, 255, 255, 0);
+
+</string>
+       </property>
+       <property name="text">
+        <string/>
+       </property>
+       <property name="scaledContents">
+        <bool>true</bool>
+       </property>
+       <property name="margin">
+        <number>0</number>
+       </property>
+      </widget>
+      <widget class="QLabel" name="system_2">
+       <property name="geometry">
+        <rect>
+         <x>570</x>
+         <y>80</y>
+         <width>41</width>
+         <height>41</height>
+        </rect>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>200</width>
+         <height>200</height>
+        </size>
+       </property>
+       <property name="text">
+        <string/>
+       </property>
+       <property name="pixmap">
+        <pixmap>imageface/display.png</pixmap>
+       </property>
+       <property name="scaledContents">
+        <bool>true</bool>
+       </property>
+      </widget>
+      <zorder>groupBox_4</zorder>
       <zorder>fail4</zorder>
       <zorder>fail3</zorder>
-      <zorder>groupBox_4</zorder>
       <zorder>camera</zorder>
       <zorder>bar_cam</zorder>
       <zorder>mouse</zorder>
@@ -973,46 +1170,25 @@ margin-bottom:7px;</string>
       <zorder>bar_micro</zorder>
       <zorder>micro</zorder>
       <zorder>system</zorder>
-      <zorder>bar_system</zorder>
       <zorder>fail2</zorder>
       <zorder>success_cam</zorder>
-      <zorder>fail6</zorder>
-      <zorder>success_micro</zorder>
       <zorder>fail5</zorder>
       <zorder>success_speaker</zorder>
+      <zorder>fail6_2</zorder>
+      <zorder>micro_2</zorder>
+      <zorder>success_hard</zorder>
+      <zorder>fail6_3</zorder>
+      <zorder>success_screen</zorder>
+      <zorder>fail6</zorder>
+      <zorder>success_micro</zorder>
+      <zorder>system_2</zorder>
      </widget>
-     <widget class="QLabel" name="label_3">
-      <property name="geometry">
-       <rect>
-        <x>0</x>
-        <y>0</y>
-        <width>561</width>
-        <height>321</height>
-       </rect>
-      </property>
-      <property name="styleSheet">
-       <string notr="true">background-color: rgba(235, 235, 235, 0.19);
-border-style: inset;
-border-width: 0.5px;
-border-radius: 5px;
-border-color: #FFF6F9;</string>
-      </property>
-      <property name="text">
-       <string/>
-      </property>
-      <property name="scaledContents">
-       <bool>true</bool>
-      </property>
-     </widget>
-     <zorder>label_3</zorder>
-     <zorder>checkDevice</zorder>
-     <zorder>groupBox_2</zorder>
     </widget>
     <widget class="QWidget" name="page3">
      <widget class="QGroupBox" name="groupBox">
       <property name="geometry">
        <rect>
-        <x>150</x>
+        <x>290</x>
         <y>10</y>
         <width>341</width>
         <height>351</height>
@@ -1035,7 +1211,7 @@ qproperty-alignment: AlignCenter;
       <widget class="QLabel" name="cameraHolder">
        <property name="geometry">
         <rect>
-         <x>60</x>
+         <x>40</x>
          <y>20</y>
          <width>241</width>
          <height>241</height>
@@ -1065,7 +1241,7 @@ qproperty-alignment: AlignCenter;
       <widget class="QLabel" name="faceBackground">
        <property name="geometry">
         <rect>
-         <x>20</x>
+         <x>0</x>
          <y>10</y>
          <width>311</width>
          <height>301</height>
@@ -1084,7 +1260,7 @@ qproperty-alignment: AlignCenter;
       <widget class="QLabel" name="followPose">
        <property name="geometry">
         <rect>
-         <x>100</x>
+         <x>80</x>
          <y>270</y>
          <width>161</width>
          <height>31</height>
@@ -1111,33 +1287,10 @@ qproperty-alignment: AlignCenter;
       <zorder>cameraHolder</zorder>
       <zorder>faceBackground</zorder>
      </widget>
-     <widget class="QLabel" name="label_5">
-      <property name="geometry">
-       <rect>
-        <x>0</x>
-        <y>0</y>
-        <width>561</width>
-        <height>321</height>
-       </rect>
-      </property>
-      <property name="styleSheet">
-       <string notr="true">background-color: rgba(235, 235, 235, 0.19);
-border-style: inset;
-border-width: 0.5px;
-border-radius: 5px;
-border-color: #FFF6F9;</string>
-      </property>
-      <property name="text">
-       <string/>
-      </property>
-      <property name="scaledContents">
-       <bool>true</bool>
-      </property>
-     </widget>
      <widget class="QLabel" name="wrongLabel">
       <property name="geometry">
        <rect>
-        <x>390</x>
+        <x>510</x>
         <y>200</y>
         <width>60</width>
         <height>60</height>
@@ -1164,7 +1317,7 @@ border-color: #FFF6F9;</string>
    <widget class="QPushButton" name="minimizeButton">
     <property name="geometry">
      <rect>
-      <x>740</x>
+      <x>1010</x>
       <y>10</y>
       <width>31</width>
       <height>31</height>
@@ -1196,14 +1349,14 @@ border-color: #FFF6F9;</string>
    <widget class="QGroupBox" name="groupBox_3">
     <property name="geometry">
      <rect>
-      <x>-1</x>
-      <y>-1</y>
+      <x>0</x>
+      <y>0</y>
       <width>141</width>
-      <height>461</height>
+      <height>541</height>
      </rect>
     </property>
     <property name="styleSheet">
-     <string notr="true">background-color: rgba(108, 103, 104, 127);
+     <string notr="true">background-color: rgba(87, 96, 100,127);
         border-style: outset;
         border-width: 1px;
         border-radius: 5px;
@@ -1219,7 +1372,7 @@ border-color: #FFF6F9;</string>
      <property name="geometry">
       <rect>
        <x>110</x>
-       <y>430</y>
+       <y>510</y>
        <width>21</width>
        <height>21</height>
       </rect>
@@ -1251,7 +1404,7 @@ border-color: #FFF6F9;</string>
      <property name="geometry">
       <rect>
        <x>10</x>
-       <y>10</y>
+       <y>380</y>
        <width>121</width>
        <height>31</height>
       </rect>
@@ -1263,7 +1416,7 @@ border-color: #FFF6F9;</string>
         border-radius: 5px;
         border-color: rgba(255, 255, 255, 0);
         padding: 4px;
-        color:rgb(129, 255, 70);
+        color:rgb(7, 98, 184);
         font-size: 13px;
         font-weight: 700;
 qproperty-alignment: AlignCenter;
@@ -1277,7 +1430,7 @@ qproperty-alignment: AlignCenter;
      <property name="geometry">
       <rect>
        <x>10</x>
-       <y>50</y>
+       <y>420</y>
        <width>121</width>
        <height>31</height>
       </rect>
@@ -1289,7 +1442,7 @@ qproperty-alignment: AlignCenter;
         border-radius: 5px;
         border-color: rgba(255, 255, 255, 0);
         padding: 4px;
-        color:rgb(129, 255, 70);
+        color:rgb(7, 98, 184);
         font-size: 13px;
         font-weight: 700;
 qproperty-alignment: AlignCenter;
@@ -1303,7 +1456,7 @@ qproperty-alignment: AlignCenter;
      <property name="geometry">
       <rect>
        <x>10</x>
-       <y>80</y>
+       <y>460</y>
        <width>121</width>
        <height>31</height>
       </rect>
@@ -1315,7 +1468,7 @@ qproperty-alignment: AlignCenter;
         border-radius: 5px;
         border-color: rgba(255, 255, 255, 0);
         padding: 4px;
-        color:rgb(129, 255, 70);
+        color:rgb(7, 98, 184);
         font-size: 13px;
         font-weight: 700;
 qproperty-alignment: AlignCenter;
@@ -1325,7 +1478,36 @@ qproperty-alignment: AlignCenter;
       <string>duration</string>
      </property>
     </widget>
+    <widget class="QLabel" name="micro_4">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>10</y>
+       <width>121</width>
+       <height>41</height>
+      </rect>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>200</width>
+       <height>200</height>
+      </size>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+     <property name="pixmap">
+      <pixmap>imageface/logo-light.png</pixmap>
+     </property>
+     <property name="scaledContents">
+      <bool>true</bool>
+     </property>
+    </widget>
    </widget>
+   <zorder>predictButton</zorder>
+   <zorder>minimizeButton</zorder>
+   <zorder>groupBox_3</zorder>
+   <zorder>pagerWindow</zorder>
   </widget>
  </widget>
  <resources>

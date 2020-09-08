@@ -6,6 +6,7 @@ from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5 import uic
 
+import datetime
 import sys
 import cv2
 import numpy as np
@@ -116,14 +117,16 @@ class GUI(QMainWindow):
         self.IsVerified = None
         self.examId = None
 
+        self.oldPos = self.pos()
 
         self.TestName = ''
         self.TestDuration = ''
         self.AllNotAllowed = None
 
+        self.WindowCameraOpened = False
 
         uic.loadUi(self.dir_path+'\main.ui', self) # Load the .ui file
-        self.setWindowFlags(Qt.FramelessWindowHint)
+        self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)
 
         
         # Adapte Views
@@ -139,12 +142,16 @@ class GUI(QMainWindow):
         self.bar_speaker.setVisible(False)
         self.bar_micro.setVisible(False)
         self.bar_system.setVisible(False)
+        self.bar_hard.setVisible(False)
+        self.bar_screen.setVisible(False)
 
         self.success_cam.setVisible(False)
         self.success_mouse.setVisible(False)
         self.success_key.setVisible(False)
         self.success_speaker.setVisible(False)
         self.success_micro.setVisible(False)
+        self.success_hard.setVisible(False)
+        self.success_screen.setVisible(False)
 
         self.predictButton.clicked.connect(self.goNextStep)
         self.exitButton.clicked.connect(self.close)
@@ -172,21 +179,74 @@ class GUI(QMainWindow):
         if self.message == 'Done':
             self.hide()
             sizeObject = QDesktopWidget().screenGeometry(-1)
-            self.ex = QMainWindow()
+            self.ex = self
             uic.loadUi(self.dir_path+'\mainCamera.ui', self.ex) # Load the .ui file
 
             self.ex.setAttribute(Qt.WA_TranslucentBackground)
-            self.ex.setWindowFlags(Qt.FramelessWindowHint)
-
-
+            self.ex.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)
+            self.IsMinimized = False
+            self.ex.minimizeButton.clicked.connect(lambda: self.MinimizeVideo())
+            self.ex.EndExamButton.clicked.connect(lambda: self.EndTheExam())
+            self.oldPos = self.ex.pos()
+            self.ex.setFixedWidth(249)
+            self.WindowCameraOpened = True
             self.ex.show()
+            
+
             self.ex.move(sizeObject.width()-250,sizeObject.height()-300)
             th = ThreadCameraVideo(self.ex)
             th.changePixmap.connect(self.setImageVideo)
+            th.changeStrLight.connect(self.setLightHint)
+            th.changeStrTime.connect(self.setTimeForSession)
             th.start()
+            self.dateTimeStartExam = datetime.datetime.now()
+            minutes = int(self.TestDurationInt)
+            minutes_added = datetime.timedelta(minutes = minutes)
+            self.dateTimeEndExam = self.dateTimeStartExam + minutes_added
         else:
             print('Error')
 
+    
+
+    @pyqtSlot(str)
+    def setLightHint(self, title):
+        self.ex.LightNote.setText(title)
+
+    @pyqtSlot(str)
+    def setTimeForSession(self, title):
+        if(title == 'Accept'):
+            
+            timeNow = datetime.datetime.now()
+            today = datetime.datetime.now()
+            today.replace(hour=0, minute=0, second=0, microsecond=0)
+            reminingTime = (self.dateTimeEndExam - timeNow)
+            self.ex.TimerNote.setText(self.strfdelta(reminingTime, "{hours}:{minutes}:{seconds}"))
+
+    def strfdelta(self,tdelta, fmt):
+        d = {"days": tdelta.days}
+        d["hours"], rem = divmod(tdelta.seconds, 3600)
+        d["minutes"], d["seconds"] = divmod(rem, 60)
+        return fmt.format(**d)
+        
+    def EndTheExam(self):
+        QCoreApplication.exit(0)
+
+
+    def MinimizeVideo(self):
+        if self.IsMinimized:
+            self.IsMinimized = False
+            self.animation1 = QPropertyAnimation(self.ex, b"size")
+            self.animation1.setDuration(500) #Default 250ms
+            self.animation1.setEndValue(QSize(249,289))
+            self.ex.setFixedWidth(249)
+            self.animation1.start()
+        else:
+            self.IsMinimized = True
+            self.animation = QPropertyAnimation(self.ex, b"size")
+            self.animation.setDuration(500) #Default 250ms
+            self.animation.setEndValue(QSize(249,39))
+            self.ex.setFixedWidth(249)
+            self.animation.start()
 
     def close(self):
         QCoreApplication.exit(0)
@@ -198,7 +258,7 @@ class GUI(QMainWindow):
         uic.loadUi(self.dir_path+'\error.ui', self.error) # Load the .ui file
         self.error.errorLabel.setText("Error in the internet")
         
-        self.error.setWindowFlags(Qt.FramelessWindowHint)
+        self.error.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)
         self.error.okError.clicked.connect(self.restart)
         self.error.show()
 
@@ -239,7 +299,7 @@ class GUI(QMainWindow):
             loop.exec_()
 
             self.checkCookies()
-        elif self.stepNow == 2:
+        elif self.stepNow == 10: #elif self.stepNow == 2:
             print("Device Checking...")
             self.CheckDevices()
             if self.checkResult:
@@ -248,9 +308,9 @@ class GUI(QMainWindow):
             else:
                 self.goToErrorPageWebsite("Please Check the Last Devices")
             
-        elif self.stepNow == 3:
+        elif self.stepNow == 9: #elif self.stepNow == 3:
             self.predict()
-        elif self.stepNow == 4:
+        elif self.stepNow == 2: #elif self.stepNow == 4:
             self.predictButton.setEnabled(True)
             self.predictButton.setStyleSheet("""QPushButton{background-color: #0095ff;
             border-style: outset;
@@ -275,18 +335,34 @@ class GUI(QMainWindow):
             # self.goNextStep()
             # finished all Steps then we will show a panel to show success or fails
 
-        elif self.stepNow == 5:
+        elif self.stepNow == 3: #elif self.stepNow == 5:
             self.ReduceWindowAndMove()
         elif self.stepNow == -1:
             self.ReduceWindowAndMove()
 
+    def mousePressEvent(self, event):
+        if self.WindowCameraOpened:
+            self.oldPos = event.globalPos()
+        else:
+            self.oldPos = event.globalPos()
+            
+
+    def mouseMoveEvent(self, event):
+        delta = QPoint (event.globalPos() - self.oldPos)
+        if self.WindowCameraOpened:
+            self.ex.move(self.ex.x() + delta.x(), self.ex.y() + delta.y())
+            self.oldPos = event.globalPos()
+        else:
+            self.move(self.x() + delta.x(), self.y() + delta.y())
+            self.oldPos = event.globalPos()
 
     def checkCookies(self):
         print("Internet Success...")
         
         cookies = browser_cookie3.chrome(domain_name="34.243.127.227")
         print("Get Cookie")
-        self.token = None
+        self.token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NCwiaXNzIjoiQXBwIiwiaWF0IjoxNTk3NTc1MjE2MTAzLCJleHAiOjE1OTc1Nzc4MDgxMDN9.aprubfcM0eeH1LqyhWGbmnRzpY503AX7eTce8sX0MiA' #None
+        self.examId = 'b15ef273fc0b1066c8710d4f16c7533b'
         for ck in cookies:
             if ck.name == 'token':
                 self.token = ck.value
@@ -297,7 +373,7 @@ class GUI(QMainWindow):
 
         dataNew = {"token": self.token}
         UrlPostData = 'http://34.243.127.227:3001/api/user/me'
-        
+        self.TestDurationInt = '0'
         if self.token != None and self.examId!=None:
             response = requests.post(UrlPostData,json=dataNew)
             self.Username = response.json()['user']['username']
@@ -310,7 +386,7 @@ class GUI(QMainWindow):
             self.TestName = response.json()['test']['name']
             self.TestDuration = str(response.json()['test']['duration']) +' m'
             self.AllNotAllowed = response.json()['testWhiteListApps']
-            
+            self.TestDurationInt = str(response.json()['test']['duration'])
             
             self.username.setText('hi, '+self.Username)
             # print(self.Username)
@@ -334,11 +410,11 @@ class GUI(QMainWindow):
         uic.loadUi(self.dir_path+'\error.ui', self.error) # Load the .ui file
         self.error.errorLabel.setText(statment)
         
-        self.error.setWindowFlags(Qt.FramelessWindowHint)
+        self.error.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)
         self.error.okError.clicked.connect(self.restart)
         self.error.show()
         
-        
+    
 
     def restart(self):
         self.show()
@@ -452,6 +528,28 @@ class GUI(QMainWindow):
         if self.checkMicrophone():
             self.bar_micro.setVisible(True)
             self.success_micro.setVisible(True)
+        else:
+            self.checkResult = False
+        
+        loop = QEventLoop()
+        QTimer.singleShot(500, loop.quit)
+        loop.exec_()
+
+        # Check Hard
+        if True:
+            self.bar_hard.setVisible(True)
+            self.success_hard.setVisible(True)
+        else:
+            self.checkResult = False
+        
+        loop = QEventLoop()
+        QTimer.singleShot(500, loop.quit)
+        loop.exec_()
+
+        # Check Monitor
+        if True:
+            self.bar_screen.setVisible(True)
+            self.success_screen.setVisible(True)
         else:
             self.checkResult = False
         
@@ -597,9 +695,6 @@ class ThreadCamera(QThread):
             ret, sample_frame = cap.read()
             if ret:
                 frame = cv2.flip(sample_frame, 2)
-                # frame = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
-                # gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-                # faces = face_cascade.detectMultiScale(gray, 1.3, 5)
                 face_rects = detector(frame, 0)
                 
                 if len(face_rects) > 0:
@@ -614,9 +709,9 @@ class ThreadCamera(QThread):
                             reprojectdst, euler_angle = get_head_pose(shape)
                             
                             ValueEularRightLeft = 9
-                            ValueEularUp = -10
+                            ValueEularUp = -3
                             poseNow = None
-                            if euler_angle[0, 0]<0.5 and euler_angle[0, 0]>ValueEularUp:
+                            if euler_angle[0, 0]<3 and euler_angle[0, 0]>ValueEularUp:
                                 if euler_angle[1, 0]>ValueEularRightLeft:
                                     cv2.putText(frame, "left", (0, 50), cv2.FONT_HERSHEY_SIMPLEX,
                                                 0.75, (30, 80, 0), thickness=2)
@@ -638,10 +733,10 @@ class ThreadCamera(QThread):
                                 cv2.putText(frame, "down", (0, 50), cv2.FONT_HERSHEY_SIMPLEX,
                                                 0.75, (30, 80, 0), thickness=2)
                                 poseNow = "down"
-                            
+                            print(poseNow)
                             self.setPose.emit('Look '+pose[pose_index])
                             if poseNow == pose[pose_index]:
-                                print(poseNow)
+                                # print(poseNow)
                                 self.setBoolStateFace.emit(False)
                                 takePhotoEvery -=1
                                 if takePhotoEvery == 0:
@@ -682,22 +777,43 @@ class ThreadCamera(QThread):
         self.setPose.emit('click Next')
         self.checkingEnded.emit('Success')
             
+# Main Camera for video exam
+Blur_Threshold=125
+Dark_Threshold=75
+
 class ThreadCameraVideo(QThread):
     changePixmap = pyqtSignal(QImage)
+    changeStrLight = pyqtSignal(str)
+    changeStrTime = pyqtSignal(str)
 
     
 
     def run(self):
         cap = cv2.VideoCapture(0)
         
+        count = 0
         while True:
             ret, sample_frame = cap.read()
+            count+= 1
             if ret:
-                frame = cv2.flip(sample_frame, 2)
-                # frame = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
+                self.textLight = ''
+                if count % 5==0:
+                    gray = cv2.cvtColor(sample_frame, cv2.COLOR_BGR2GRAY)
+                    fm = cv2.Laplacian(gray, cv2.CV_64F).var()
+                    
                 
-                # # Show the image
-                # height, width = frame.shape[:2] 
+                    fm2=np.mean(sample_frame)
+                    if fm2 < Dark_Threshold:
+                        self.textLight = "Room too dark"
+                        self.changeStrLight.emit(self.textLight)
+                    else:
+                        self.textLight=""
+                        self.changeStrLight.emit(self.textLight)
+
+                    
+
+                self.changeStrTime.emit("Accept")
+                frame = cv2.flip(sample_frame, 2)
                 dim = (250, 250)
                 frame = cv2.resize(frame, dim) 
                 rgbImage = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
