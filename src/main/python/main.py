@@ -10,8 +10,10 @@ import datetime
 import sys
 import cv2
 import numpy as np
+import pyautogui
 import requests
 import base64
+import random
 
 import threading
 
@@ -177,35 +179,112 @@ class GUI(QMainWindow):
         print(self.message)
         print(response.text)
         if self.message == 'Done':
-            self.hide()
-            sizeObject = QDesktopWidget().screenGeometry(-1)
-            self.ex = self
-            uic.loadUi(self.dir_path+'\mainCamera.ui', self.ex) # Load the .ui file
-
-            self.ex.setAttribute(Qt.WA_TranslucentBackground)
-            self.ex.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)
-            self.IsMinimized = False
-            self.ex.minimizeButton.clicked.connect(lambda: self.MinimizeVideo())
-            self.ex.EndExamButton.clicked.connect(lambda: self.EndTheExam())
-            self.oldPos = self.ex.pos()
-            self.ex.setFixedWidth(249)
-            self.WindowCameraOpened = True
-            self.ex.show()
+            self.OpenCameraApp()
             
-
-            self.ex.move(sizeObject.width()-250,sizeObject.height()-300)
-            th = ThreadCameraVideo(self.ex)
-            th.changePixmap.connect(self.setImageVideo)
-            th.changeStrLight.connect(self.setLightHint)
-            th.changeStrTime.connect(self.setTimeForSession)
-            th.start()
-            self.dateTimeStartExam = datetime.datetime.now()
-            minutes = int(self.TestDurationInt)
-            minutes_added = datetime.timedelta(minutes = minutes)
-            self.dateTimeEndExam = self.dateTimeStartExam + minutes_added
         else:
             print('Error')
 
+    def OpenLoaderUpload(self):
+        self.hide()
+        sizeObject = QDesktopWidget().screenGeometry(-1)
+        self.LoaderUpload = self
+        uic.loadUi(self.dir_path+'\progressUploading.ui', self.LoaderUpload) # Load the .ui file
+
+        self.LoaderUpload.setAttribute(Qt.WA_TranslucentBackground)
+        self.LoaderUpload.setWindowFlags(Qt.FramelessWindowHint )
+        
+        self.LoaderUpload.setFixedWidth(1047)
+
+        self.LoaderUpload.show()
+
+        
+        # sizeObject = QDesktopWidget().screenGeometry(-1)
+        # self.LoaderUpload.move(sizeObject.width(),sizeObject.height())
+
+        self.centerWidgetOnScreen(self.LoaderUpload)
+        
+        self.LoaderUpload.predictButton.clicked.connect(self.close)
+        self.LoaderUpload.username.setText('hi, '+self.Username)
+        self.LoaderUpload.testname_label.setText(self.TestName)
+        self.LoaderUpload.testduration_label.setText((self.TestDuration) )
+        self.LoaderUpload.predictButton.setStyleSheet("""QPushButton{background-color: rgb(190, 188, 188);
+        border-style: outset;
+        border-width: 1px;
+        border-radius: 5px;
+        border-color: #e8e8e8;
+        padding: 4px;
+        color: #fbfbfb;
+        font-size: 15px;
+        font-weight: 700;}""")
+        self.LoaderUpload.predictButton.setEnabled(False)
+
+        self.uploadThread = threading.Thread(target=self.upload_fileCamera, args=())
+        self.uploadThread.start()
+
+    def centerWidgetOnScreen(self, widget):
+        centerPoint = QScreen.availableGeometry(QApplication.primaryScreen()).center()
+        fg = widget.frameGeometry()
+        fg.moveCenter(centerPoint)
+        widget.move(fg.topLeft())
+
+    def progressBarValue(self, value):
+        # HTML TEXT PERCENTAGE
+        htmlText = """<p><span style=" font-size:59pt;">{VALUE}</span><span style=" font-size:58pt; vertical-align:super;">%</span></p>"""
+
+        # REPLACE VALUE
+        newHtml = htmlText.replace("{VALUE}", str(value))
+
+        self.LoaderUpload.labelPercentage.setText(newHtml)
+        # PROGRESSBAR STYLESHEET BASE
+        styleSheet = """
+        QFrame{
+        	border-radius: 150px;
+        	background-color: qconicalgradient(cx:0.5, cy:0.5, angle:90, stop:{STOP_1} rgba(255, 0, 127, 0), stop:{STOP_2} rgba(85, 170, 255, 255));
+        }
+        """
+
+        # GET PROGRESS BAR VALUE, CONVERT TO FLOAT AND INVERT VALUES
+        # stop works of 1.000 to 0.000
+        progress = (100 - value) / 100.0
+
+        # GET NEW VALUES
+        stop_1 = str(progress - 0.001)
+        stop_2 = str(progress)
+
+        # SET VALUES TO NEW STYLESHEET
+        newStylesheet = styleSheet.replace("{STOP_1}", stop_1).replace("{STOP_2}", stop_2)
+
+        # APPLY STYLESHEET WITH NEW VALUES
+        self.LoaderUpload.circularProgress.setStyleSheet(newStylesheet)
+
+
+    def OpenCameraApp(self):
+        self.hide()
+        sizeObject = QDesktopWidget().screenGeometry(-1)
+        self.ex = self
+        uic.loadUi(self.dir_path+'\mainCamera.ui', self.ex) # Load the .ui file
+
+        self.ex.setAttribute(Qt.WA_TranslucentBackground)
+        self.ex.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)
+        self.IsMinimized = False
+        self.ex.minimizeButton.clicked.connect(lambda: self.MinimizeVideo())
+        self.ex.EndExamButton.clicked.connect(lambda: self.EndTheExam())
+        self.oldPos = self.ex.pos()
+        self.ex.setFixedWidth(249)
+        self.WindowCameraOpened = True
+        self.ex.show()
+        
+
+        self.ex.move(sizeObject.width()-250,sizeObject.height()-300)
+        self.th = ThreadCameraVideo(self.ex)
+        self.th.changePixmap.connect(self.setImageVideo)
+        self.th.changeStrLight.connect(self.setLightHint)
+        self.th.changeStrTime.connect(self.setTimeForSession)
+        self.th.start()
+        self.dateTimeStartExam = datetime.datetime.now()
+        minutes = int(self.TestDurationInt)
+        minutes_added = datetime.timedelta(minutes = minutes)
+        self.dateTimeEndExam = self.dateTimeStartExam + minutes_added
     
 
     @pyqtSlot(str)
@@ -229,8 +308,130 @@ class GUI(QMainWindow):
         return fmt.format(**d)
         
     def EndTheExam(self):
-        QCoreApplication.exit(0)
+        self.th.cap.release()
+        self.th.out.release()
+        self.th.outScreen.release()
+        self.OpenLoaderUpload()
+        
+        # QCoreApplication.exit(0)
 
+    def getUnique(self,fileSize):
+        t = datetime.datetime.now()
+        dateRand = (t-datetime.datetime(1970,1,1)).total_seconds()
+        return int(math.floor(random.randint(33333, 999999)) + dateRand + fileSize)
+
+    def upload_fileCamera(self):
+        filename = self.th.NameOfFile
+        chunksize = 10000
+        totalsize = os.path.getsize(filename)
+        totalChucks = math.ceil(totalsize/chunksize)
+        readsofar = 0
+        url = "http://34.243.127.227:3001/api/upload/video/"+self.examId
+        token = self.token
+        i = 0
+        uniqueId = self.getUnique(totalsize)
+        with open(filename, 'rb') as file:
+            while True:
+                data = file.read(chunksize)
+                f = open("fileDownload", "wb")
+                f.write(data)
+                f.close()
+                if not data:
+                    sys.stderr.write("\n")
+                    break
+                readsofar += len(data)
+                percent = readsofar * 1e2 / totalsize
+                
+                headers = {
+                    'Access-Control-Max-Age':'86400',
+                    'Access-Control-Allow-Methods': 'POST,OPTIONS' ,
+                    'Access-Control-Allow-Headers': 'uploader-chunk-number,uploader-chunks-total,uploader-file-id', 
+                    'Access-Control-Allow-Origin':'http://localhost:3000',
+                    'authorization': "Bearer "+token,
+                    'uploader-file-id': str(uniqueId),
+                    'uploader-chunks-total': str(totalChucks),
+                    'uploader-chunk-number': str(i)
+                    }
+
+            
+                files = {'file': ('fileDownload',open('fileDownload', 'rb'),'application/octet-stream')}
+                try:
+                    r = requests.request('POST',url,files=files,headers=headers, verify=False)
+                    # print(r.text)
+                    
+                    i+=1
+                except Exception as exc:
+                    print(exc)
+                self.progressBarValue(int(percent/2))
+                print("\r{percent:3.0f}%".format(percent=percent))
+
+        self.upload_fileScreen()
+       
+
+    def upload_fileScreen(self):
+        filename = self.th.NameOfFileScreen
+        chunksize = 10000
+        totalsize = os.path.getsize(filename)
+        totalChucks = math.ceil(totalsize/chunksize)
+        readsofar = 0
+        url = "http://34.243.127.227:3001/api/upload/video/"+self.examId
+        token = self.token
+        i = 0
+        uniqueId = self.getUnique(totalsize)
+        with open(filename, 'rb') as file:
+            while True:
+                data = file.read(chunksize)
+                f = open("fileDownload", "wb")
+                f.write(data)
+                f.close()
+                if not data:
+                    sys.stderr.write("\n")
+                    break
+                readsofar += len(data)
+                percent = readsofar * 1e2 / totalsize
+                
+                headers = {
+                    'Access-Control-Max-Age':'86400',
+                    'Access-Control-Allow-Methods': 'POST,OPTIONS' ,
+                    'Access-Control-Allow-Headers': 'uploader-chunk-number,uploader-chunks-total,uploader-file-id', 
+                    'Access-Control-Allow-Origin':'http://localhost:3000',
+                    'authorization': "Bearer "+token,
+                    'uploader-file-id': str(uniqueId),
+                    'uploader-chunks-total': str(totalChucks),
+                    'uploader-chunk-number': str(i)
+                    }
+
+            
+                files = {'file': ('fileDownload',open('fileDownload', 'rb'),'application/octet-stream')}
+                try:
+                    r = requests.request('POST',url,files=files,headers=headers, verify=False)
+                    # print(r.text)
+                    
+                    i+=1
+                except Exception as exc:
+                    print(exc)
+                self.progressBarValue(int(percent/2+50))
+                print("\r{percent:3.0f}%".format(percent=percent))
+        self.LoaderUpload.predictButton.setEnabled(True)
+        self.LoaderUpload.predictButton.setStyleSheet("""QPushButton{background-color: #0095ff;
+            border-style: outset;
+            border-width: 1px;
+            border-radius: 5px;
+            border-color: #e8e8e8;
+            padding: 4px;
+            color: #fbfbfb;
+            font-size: 15px;
+            font-weight: 700;}
+            
+            QPushButton:hover{background-color: #0095ff;
+            border-style: outset;
+            border-width: 1px;
+            border-radius: 5px;
+            border-color: #e8e8e8;
+            padding: 4px;
+            color: #565050;
+            font-size: 15px;
+            font-weight: 700;}""")
 
     def MinimizeVideo(self):
         if self.IsMinimized:
@@ -299,7 +500,7 @@ class GUI(QMainWindow):
             loop.exec_()
 
             self.checkCookies()
-        elif self.stepNow == 10: #elif self.stepNow == 2:
+        elif self.stepNow == 2:
             print("Device Checking...")
             self.CheckDevices()
             if self.checkResult:
@@ -308,9 +509,9 @@ class GUI(QMainWindow):
             else:
                 self.goToErrorPageWebsite("Please Check the Last Devices")
             
-        elif self.stepNow == 9: #elif self.stepNow == 3:
+        elif self.stepNow == 3:
             self.predict()
-        elif self.stepNow == 2: #elif self.stepNow == 4:
+        elif self.stepNow == 4:
             self.predictButton.setEnabled(True)
             self.predictButton.setStyleSheet("""QPushButton{background-color: #0095ff;
             border-style: outset;
@@ -335,7 +536,7 @@ class GUI(QMainWindow):
             # self.goNextStep()
             # finished all Steps then we will show a panel to show success or fails
 
-        elif self.stepNow == 3: #elif self.stepNow == 5:
+        elif self.stepNow == 5:
             self.ReduceWindowAndMove()
         elif self.stepNow == -1:
             self.ReduceWindowAndMove()
@@ -787,13 +988,41 @@ class ThreadCameraVideo(QThread):
     changeStrTime = pyqtSignal(str)
 
     
+    
+    def getUnique(self):
+        t = datetime.datetime.now()
+        dateRand = (t-datetime.datetime(1970,1,1)).total_seconds()
+        return int(math.floor(random.randint(33333, 999999)) + dateRand)
+
+
 
     def run(self):
-        cap = cv2.VideoCapture(0)
+        self.cap = cv2.VideoCapture(0)
+        self.NameOfFile = str(self.getUnique())+'.avi'
+        self.NameOfFileScreen = str(self.getUnique())+'.avi'
+        fourcc = cv2.VideoWriter_fourcc(*'XVID')
+        self.out = cv2.VideoWriter(self.NameOfFile, fourcc, 20.0, (640,480))
         
+
+        # display screen resolution, get it from your OS settings
+        SCREEN_SIZE = pyautogui.size()
+        # define the codec
+        fourcc2 = cv2.VideoWriter_fourcc(*"XVID")
+        # create the video write object
+        self.outScreen = cv2.VideoWriter(self.NameOfFileScreen, fourcc2, 20.0, SCREEN_SIZE)
+
+
         count = 0
         while True:
-            ret, sample_frame = cap.read()
+            
+            imgScreen = pyautogui.screenshot()
+            # convert these pixels to a proper numpy array to work with OpenCV
+            frameScreen = np.array(imgScreen)
+            # convert colors from BGR to RGB
+            frameScreen = cv2.cvtColor(frameScreen, cv2.COLOR_BGR2RGB)
+            # write the frame
+            self.outScreen.write(frameScreen)
+            ret, sample_frame = self.cap.read()
             count+= 1
             if ret:
                 self.textLight = ''
@@ -814,6 +1043,7 @@ class ThreadCameraVideo(QThread):
 
                 self.changeStrTime.emit("Accept")
                 frame = cv2.flip(sample_frame, 2)
+                self.out.write(frame)
                 dim = (250, 250)
                 frame = cv2.resize(frame, dim) 
                 rgbImage = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -822,7 +1052,9 @@ class ThreadCameraVideo(QThread):
                 convertToQtFormat = QImage(rgbImage.data, w, h, bytesPerLine, QImage.Format_RGB888)
                 self.changePixmap.emit(convertToQtFormat)
 
-        cap.release()
+        self.cap.release()
+        self.out.release()
+        self.outScreen.release()
    
 
 
