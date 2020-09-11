@@ -45,6 +45,7 @@ from imutils import face_utils
 import keyboard
 
 keyboard.add_hotkey("alt + f4", lambda: None, suppress =True)
+keyboard.add_hotkey("ctrl + c", lambda: None, suppress =True)
 
 face_landmark_path = 'shape_predictor_68_face_landmarks.dat'
 
