@@ -5,6 +5,7 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5 import uic
+import tempfile
 
 import datetime
 import sys
@@ -41,6 +42,9 @@ user32 = ctypes.WinDLL('user32')
 
 import dlib
 from imutils import face_utils
+import keyboard
+
+keyboard.add_hotkey("alt + f4", lambda: None, suppress =True)
 
 face_landmark_path = 'shape_predictor_68_face_landmarks.dat'
 
@@ -107,11 +111,15 @@ class GUI(QMainWindow):
         try:
             self.dir_path = sys.argv[1:][0] 
         except:
-            self.dir_path =os.path.dirname(os.path.realpath(__file__))
+            if getattr(sys, 'frozen', False):
+                self.dir_path = os.path.dirname(sys.executable)
+            elif __file__:
+                self.dir_path = os.path.dirname(__file__)
+            # self.dir_path =os.path.dirname(os.path.realpath(__file__))
         # self.dir_path = sys.argv[1:][0] #os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
         super(GUI,self).__init__()
+        self.GUIPanel = self
         self.stepNow = 0
-        self.checkInternetTrial = 0
         self.appctxt = appctxt
         # User Session Token
         self.token = None
@@ -287,19 +295,6 @@ class GUI(QMainWindow):
         self.dateTimeEndExam = self.dateTimeStartExam + minutes_added
     
 
-    @pyqtSlot(str)
-    def setLightHint(self, title):
-        self.ex.LightNote.setText(title)
-
-    @pyqtSlot(str)
-    def setTimeForSession(self, title):
-        if(title == 'Accept'):
-            
-            timeNow = datetime.datetime.now()
-            today = datetime.datetime.now()
-            today.replace(hour=0, minute=0, second=0, microsecond=0)
-            reminingTime = (self.dateTimeEndExam - timeNow)
-            self.ex.TimerNote.setText(self.strfdelta(reminingTime, "{hours}:{minutes}:{seconds}"))
 
     def strfdelta(self,tdelta, fmt):
         d = {"days": tdelta.days}
@@ -321,7 +316,7 @@ class GUI(QMainWindow):
         return int(math.floor(random.randint(33333, 999999)) + dateRand + fileSize)
 
     def upload_fileCamera(self):
-        filename = self.th.NameOfFile
+        filename = self.th.PathOfFile
         chunksize = 10000
         totalsize = os.path.getsize(filename)
         totalChucks = math.ceil(totalsize/chunksize)
@@ -333,7 +328,7 @@ class GUI(QMainWindow):
         with open(filename, 'rb') as file:
             while True:
                 data = file.read(chunksize)
-                f = open("fileDownload", "wb")
+                f = open(tempfile.gettempdir()+"\\"+"fileDownload", "wb")
                 f.write(data)
                 f.close()
                 if not data:
@@ -354,7 +349,7 @@ class GUI(QMainWindow):
                     }
 
             
-                files = {'file': ('fileDownload',open('fileDownload', 'rb'),'application/octet-stream')}
+                files = {'file': ('fileDownload',open(tempfile.gettempdir()+"\\"+"fileDownload", 'rb'),'application/octet-stream')}
                 try:
                     r = requests.request('POST',url,files=files,headers=headers, verify=False)
                     # print(r.text)
@@ -369,7 +364,7 @@ class GUI(QMainWindow):
        
 
     def upload_fileScreen(self):
-        filename = self.th.NameOfFileScreen
+        filename = self.th.PathNameOfFileScreen
         chunksize = 10000
         totalsize = os.path.getsize(filename)
         totalChucks = math.ceil(totalsize/chunksize)
@@ -381,7 +376,7 @@ class GUI(QMainWindow):
         with open(filename, 'rb') as file:
             while True:
                 data = file.read(chunksize)
-                f = open("fileDownload", "wb")
+                f = open(tempfile.gettempdir()+"\\"+"fileDownload", "wb")
                 f.write(data)
                 f.close()
                 if not data:
@@ -402,7 +397,7 @@ class GUI(QMainWindow):
                     }
 
             
-                files = {'file': ('fileDownload',open('fileDownload', 'rb'),'application/octet-stream')}
+                files = {'file': ("fileDownload",open(tempfile.gettempdir()+'\\'+'fileDownload', 'rb'),'application/octet-stream')}
                 try:
                     r = requests.request('POST',url,files=files,headers=headers, verify=False)
                     # print(r.text)
@@ -452,8 +447,25 @@ class GUI(QMainWindow):
     def close(self):
         QCoreApplication.exit(0)
 
+    
+    @pyqtSlot(str)
+    def setLightHint(self, title):
+        self.ex.LightNote.setText(title)
+
+    @pyqtSlot(str)
+    def setTimeForSession(self, title):
+        if(title == 'Accept'):
+            
+            timeNow = datetime.datetime.now()
+            today = datetime.datetime.now()
+            today.replace(hour=0, minute=0, second=0, microsecond=0)
+            reminingTime = (self.dateTimeEndExam - timeNow)
+            self.ex.TimerNote.setText(self.strfdelta(reminingTime, "{hours}:{minutes}:{seconds}"))
+
+    @pyqtSlot()
     def goToErrorPage(self):
         # self.app = QApplication([])
+        print("Error")
         self.error = QMainWindow()
         self.error.setAttribute(Qt.WA_TranslucentBackground)
         uic.loadUi(self.dir_path+'\error.ui', self.error) # Load the .ui file
@@ -461,10 +473,14 @@ class GUI(QMainWindow):
         
         self.error.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)
         self.error.okError.clicked.connect(self.restart)
-        self.error.show()
-
-    
-
+        
+        
+        try:
+            self.hide()
+            self.error.show()
+        except:
+            print("Error")
+            
     def goNextStep(self):
         self.predictButton.setStyleSheet("""QPushButton{background-color: rgb(190, 188, 188);
         border-style: outset;
@@ -480,34 +496,33 @@ class GUI(QMainWindow):
         if self.stepNow == 0:
             print("Checking Internet...")
 
-            loop = QEventLoop()
-            QTimer.singleShot(1000, loop.quit)
-            loop.exec_()
             
-            
-            # self.checkInternetThread = threading.Thread(target=self.checkInternet, args=())
-            # self.checkInternetThread.start()
-            self.checkInternet()
-            # self.threadpool = QThreadPool()
-            # self.threadpool.start(self.checkInternet)
+            self.checkInternetThread = ThreadInternetConnection(self)
+            self.checkInternetThread.ShowErrorPanel.connect(self.goToErrorPage)
+            self.checkInternetThread.GoNextStep.connect(self.goNextStepSlotOutSide)
+            self.checkInternetThread.start()
         elif self.stepNow == 1:
 
-            # self.checkCookiesThread = threading.Thread(target=self.checkCookies, args=())
-            # self.checkCookiesThread.start()
+            self.checkCookiesThread = threading.Thread(target=self.checkCookies, args=())
+            self.checkCookiesThread.start()
             
             loop = QEventLoop()
             QTimer.singleShot(1000, loop.quit)
             loop.exec_()
 
-            self.checkCookies()
+            # self.checkCookies()
         elif self.stepNow == 2:
             print("Device Checking...")
-            self.CheckDevices()
-            if self.checkResult:
-                self.stepNow +=1
-                self.goNextStep()
-            else:
-                self.goToErrorPageWebsite("Please Check the Last Devices")
+            # Make a Check for All Devices Thread
+            
+            self.checkDevicesThread = ThreadDeviceCheckConnection(self)
+            self.checkDevicesThread.ShowErrorPanel.connect(self.goToErrorPageWebsite)
+            self.checkDevicesThread.GoNextStep.connect(self.goNextStepSlotOutSide)
+            self.checkDevicesThread.HandleBlackList.connect(self.closeAllBlackList)
+            self.checkDevicesThread.start()
+
+
+            
             
         elif self.stepNow == 3:
             self.predict()
@@ -563,7 +578,7 @@ class GUI(QMainWindow):
         cookies = browser_cookie3.chrome(domain_name="34.243.127.227")
         print("Get Cookie")
         self.token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NCwiaXNzIjoiQXBwIiwiaWF0IjoxNTk3NTc1MjE2MTAzLCJleHAiOjE1OTc1Nzc4MDgxMDN9.aprubfcM0eeH1LqyhWGbmnRzpY503AX7eTce8sX0MiA' #None
-        self.examId = 'b15ef273fc0b1066c8710d4f16c7533b'
+        self.examId = 'dc5ab342f6a0d3e488bb5d7be33c921c'
         for ck in cookies:
             if ck.name == 'token':
                 self.token = ck.value
@@ -604,6 +619,43 @@ class GUI(QMainWindow):
             self.goToErrorPageWebsite("Please go to the Exam From the Website")
 
 
+    
+        
+    
+
+    def restart(self):
+        self.show()
+        self.error.hide()
+        self.stepNow
+        self.goNextStep()
+
+    
+
+        
+
+    
+    @pyqtSlot()
+    def closeAllBlackList(self):
+        # PROCNAME = "notepad.exe"
+
+        for proc in psutil.process_iter():
+            # check whether the process name matches
+            # print(proc.name())
+            # print(self.AllNotAllowed)
+            for program in self.AllNotAllowed:
+                if proc.name() == program['SystemApp']['serviceName']:
+                    proc.kill()
+
+    @pyqtSlot(bool)
+    def goNextStepSlotOutSide(self,Accept):
+        if Accept:
+            self.stepNow +=1
+            self.goNextStep()
+        else:
+            self.goNextStep()
+
+    
+    @pyqtSlot(str)
     def goToErrorPageWebsite(self,statment):
         self.hide()
         self.error = QMainWindow()
@@ -614,171 +666,6 @@ class GUI(QMainWindow):
         self.error.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)
         self.error.okError.clicked.connect(self.restart)
         self.error.show()
-        
-    
-
-    def restart(self):
-        self.show()
-        self.error.hide()
-        self.stepNow
-        self.goNextStep()
-
-    def checkInternetConnection(self):
-        self.checkInternetTrial+=1
-        try:
-            requests.get('https://www.google.com/', verify=False,timeout=1).status_code
-            return True
-        except:
-            return False
-
-    def checkInternet(self):
-        if self.checkInternetConnection():
-            self.stepNow +=1
-            self.goNextStep()
-        else:
-            # check internet to 5 times
-            if self.checkInternetTrial < 5:
-                self.goNextStep()
-            else:
-                self.checkInternetTrial = 0
-                self.goToErrorPage()
-        
-        
-
-    #Check VMWARE
-    def checkVmWare(self):
-        batcmd='systeminfo /s %computername% | findstr /c:"Model:" /c:"Host Name" /c:"OS Name"'
-        result = subprocess.check_output(batcmd, shell=True)
-        # print(result)
-
-        if re.search('VirtualBox', str(result), re.IGNORECASE):
-            return (True)
-        else:
-            return (False)
-
-    def checkMicrophone(self):
-        winmm= windll.winmm
-        if winmm.waveInGetNumDevs()>0:
-            return True
-        else:
-            return False
-
-    def checkSpeaker(self):
-        p = pyaudio.PyAudio()
-
-        for i in range(0,10):
-            try:
-                if p.get_device_info_by_index(i)['maxOutputChannels']>0:
-                    return True
-            except Exception as e:
-                print (e)
-                return False
-
-    def CheckDevices(self):
-        
-        self.checkResult = True
-        
-        # Check Camera
-        cap = cv2.VideoCapture(0) 
-        if not (cap is None or not cap.isOpened()):
-            self.bar_cam.setVisible(True)
-            self.success_cam.setVisible(True)
-        else:
-            self.checkResult = False
-
-        loop = QEventLoop()
-        QTimer.singleShot(500, loop.quit)
-        loop.exec_()
-
-        # Check Mouse
-        wmiService = wmi.WMI()
-        self.PointingDevices = wmiService.query("SELECT * FROM Win32_PointingDevice")
-        if len(self.PointingDevices)>= 1:
-            self.bar_mouse.setVisible(True)
-            self.success_mouse.setVisible(True)
-        else:
-            self.checkResult = False
-            
-        loop = QEventLoop()
-        QTimer.singleShot(500, loop.quit)
-        loop.exec_()
-
-        # Check Keyboard
-        self.keyboards = wmiService.query("SELECT * FROM Win32_Keyboard")
-        if len(self.keyboards) >= 1:
-            self.bar_key.setVisible(True)
-            self.success_key.setVisible(True)
-        else:
-            self.checkResult = False
-       
-        loop = QEventLoop()
-        QTimer.singleShot(500, loop.quit)
-        loop.exec_()
-
-        if self.checkSpeaker():
-            self.bar_speaker.setVisible(True)
-            self.success_speaker.setVisible(True)
-        else:
-            self.checkResult = False
-        
-        loop = QEventLoop()
-        QTimer.singleShot(500, loop.quit)
-        loop.exec_()
-
-
-        if self.checkMicrophone():
-            self.bar_micro.setVisible(True)
-            self.success_micro.setVisible(True)
-        else:
-            self.checkResult = False
-        
-        loop = QEventLoop()
-        QTimer.singleShot(500, loop.quit)
-        loop.exec_()
-
-        # Check Hard
-        if True:
-            self.bar_hard.setVisible(True)
-            self.success_hard.setVisible(True)
-        else:
-            self.checkResult = False
-        
-        loop = QEventLoop()
-        QTimer.singleShot(500, loop.quit)
-        loop.exec_()
-
-        # Check Monitor
-        if True:
-            self.bar_screen.setVisible(True)
-            self.success_screen.setVisible(True)
-        else:
-            self.checkResult = False
-        
-        loop = QEventLoop()
-        QTimer.singleShot(500, loop.quit)
-        loop.exec_()
-
-
-        self.closeAllBlackList()
-
-        if not self.checkVmWare():
-            self.bar_system.setVisible(True)
-        else:
-            self.checkResult = False
-        
-        loop = QEventLoop()
-        QTimer.singleShot(1000, loop.quit)
-        loop.exec_()
-
-    def closeAllBlackList(self):
-        # PROCNAME = "notepad.exe"
-
-        for proc in psutil.process_iter():
-            # check whether the process name matches
-            # print(proc.name())
-            for program in self.AllNotAllowed:
-                if proc.name() == program['SystemApp']['serviceName']:
-                    proc.kill()
 
     @pyqtSlot(QImage)
     def setImageVideo(self, image):
@@ -829,8 +716,185 @@ class GUI(QMainWindow):
         th.checkingEnded.connect(self.goCheckingForPose)
         th.start()
 
+# Internet Connection as it handle Requests
+class ThreadInternetConnection(QThread):
+    # Create the signal
+    ShowErrorPanel = pyqtSignal()
+    GoNextStep =pyqtSignal(bool)
+
+    def __init__(self, mw, parent=None):
+        super().__init__(parent)
+        self.checkInternetTrial = 0
+
+    def checkInternetConnection(self):
+        self.checkInternetTrial+=1
+        try:
+            requests.get('https://www.google.com/', verify=False,timeout=1).status_code
+            return True
+        except:
+            return False
+
+    def run(self):
+        while True:
+            QThread.msleep(1000)
+            if self.checkInternetConnection():
+                self.GoNextStep.emit(True)
+                break
+            else:
+                # check internet to 5 times of Seconds
+                if self.checkInternetTrial == 5:
+                    self.checkInternetTrial = 0
+                    self.ShowErrorPanel.emit()
+                    break
+        
+# Internet Connection as it handle Requests
+class ThreadDeviceCheckConnection(QThread):
+    # Create the signal
+    ShowErrorPanel = pyqtSignal(str)
+    GoNextStep =pyqtSignal(bool)
+    HandleBlackList = pyqtSignal()
+
+    
+    def __init__(self,window):
+        super(ThreadDeviceCheckConnection,self).__init__(window)
+        self.WindowPanel = window
+
+   #Check VMWARE
+    def checkVmWare(self):
+        batcmd='systeminfo /s %computername% | findstr /c:"Model:" /c:"Host Name" /c:"OS Name"'
+        result = subprocess.check_output(batcmd, shell=True)
+        # print(result)
+
+        if re.search('VirtualBox', str(result), re.IGNORECASE):
+            return (True)
+        else:
+            return (False)
+
+    def checkMicrophone(self):
+        winmm= windll.winmm
+        if winmm.waveInGetNumDevs()>0:
+            return True
+        else:
+            return False
+
+    def checkSpeaker(self):
+        p = pyaudio.PyAudio()
+
+        for i in range(0,10):
+            try:
+                if p.get_device_info_by_index(i)['maxOutputChannels']>0:
+                    return True
+            except Exception as e:
+                print (e)
+                return False
+
+    def CheckDevices(self):
+        
+        self.checkResult = True
+        
+        # Check Camera
+        cap = cv2.VideoCapture(0) 
+        if not (cap is None or not cap.isOpened()):
+            self.WindowPanel.bar_cam.setVisible(True)
+            self.WindowPanel.success_cam.setVisible(True)
+        else:
+            self.checkResult = False
+
+        loop = QEventLoop()
+        QTimer.singleShot(500, loop.quit)
+        loop.exec_()
+
+        # Check Mouse
+        wmiService = wmi.WMI()
+        self.PointingDevices = wmiService.query("SELECT * FROM Win32_PointingDevice")
+        if len(self.PointingDevices)>= 1:
+            self.WindowPanel.bar_mouse.setVisible(True)
+            self.WindowPanel.success_mouse.setVisible(True)
+        else:
+            self.checkResult = False
+            
+        loop = QEventLoop()
+        QTimer.singleShot(500, loop.quit)
+        loop.exec_()
+
+        # Check Keyboard
+        self.keyboards = wmiService.query("SELECT * FROM Win32_Keyboard")
+        if len(self.keyboards) >= 1:
+            self.WindowPanel.bar_key.setVisible(True)
+            self.WindowPanel.success_key.setVisible(True)
+        else:
+            self.checkResult = False
+       
+        loop = QEventLoop()
+        QTimer.singleShot(500, loop.quit)
+        loop.exec_()
+
+        if self.checkSpeaker():
+            self.WindowPanel.bar_speaker.setVisible(True)
+            self.WindowPanel.success_speaker.setVisible(True)
+        else:
+            self.checkResult = False
+        
+        loop = QEventLoop()
+        QTimer.singleShot(500, loop.quit)
+        loop.exec_()
+
+
+        if self.checkMicrophone():
+            self.WindowPanel.bar_micro.setVisible(True)
+            self.WindowPanel.success_micro.setVisible(True)
+        else:
+            self.checkResult = False
+        
+        loop = QEventLoop()
+        QTimer.singleShot(500, loop.quit)
+        loop.exec_()
+
+        # Check Hard
+        if True:
+            self.WindowPanel.bar_hard.setVisible(True)
+            self.WindowPanel.success_hard.setVisible(True)
+        else:
+            self.checkResult = False
+        
+        loop = QEventLoop()
+        QTimer.singleShot(500, loop.quit)
+        loop.exec_()
+
+        # Check Monitor
+        if True:
+            self.WindowPanel.bar_screen.setVisible(True)
+            self.WindowPanel.success_screen.setVisible(True)
+        else:
+            self.checkResult = False
+        
+        loop = QEventLoop()
+        QTimer.singleShot(500, loop.quit)
+        loop.exec_()
+
+
+        self.HandleBlackList.emit()
+
+        if not self.checkVmWare():
+            self.WindowPanel.bar_system.setVisible(True)
+        else:
+            self.checkResult = False
+        
+        loop = QEventLoop()
+        QTimer.singleShot(1000, loop.quit)
+        loop.exec_()
+
+
+
+    def run(self):
+        self.CheckDevices()
+        if self.checkResult:
+            self.GoNextStep.emit(True)
+        else:
+            self.ShowErrorPanel.emit("Please Check the Last Devices")
         
 
+# Camera For Pose Thread
 class ThreadCamera(QThread):
     changePixmap = pyqtSignal(QImage)
     setPose = pyqtSignal(str)
@@ -877,7 +941,10 @@ class ThreadCamera(QThread):
         try:
             self.dir_path = sys.argv[1:][0] 
         except:
-            self.dir_path =os.path.dirname(os.path.realpath(__file__))
+            if getattr(sys, 'frozen', False):
+                self.dir_path = os.path.dirname(sys.executable)
+            elif __file__:
+                self.dir_path = os.path.dirname(__file__)
          #os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
         cap = cv2.VideoCapture(0)
         
@@ -888,11 +955,11 @@ class ThreadCamera(QThread):
 
         predictor = dlib.shape_predictor(self.dir_path+"\\"+face_landmark_path)
 
-        pose = ['front','right','left','up','down']
+        pose = ['front','right','left','down','up']
         pose_index = 0
         count = 1
         takePhotoEvery = 30
-        while pose_index < 5:
+        while pose_index < 4:
             ret, sample_frame = cap.read()
             if ret:
                 frame = cv2.flip(sample_frame, 2)
@@ -902,7 +969,7 @@ class ThreadCamera(QThread):
                     for i, d in enumerate(face_rects):
                         frame = cv2.rectangle(frame,(d.left(),d.top()),(d.right(), d.bottom()),(255,0,0),2)
                         # print(abs(d.left() - d.right())*(d.top() - d.bottom()))
-                        if abs((d.left() - d.right())*(d.top() - d.bottom()))>46564 and abs((d.left() - d.right())*(d.top() - d.bottom()))<99100:
+                        if abs((d.left() - d.right())*(d.top() - d.bottom()))>46564 :
                             frameWithoutRec = frame
                             shape = predictor(frame, face_rects[0])
                             shape = face_utils.shape_to_np(shape)
@@ -910,9 +977,9 @@ class ThreadCamera(QThread):
                             reprojectdst, euler_angle = get_head_pose(shape)
                             
                             ValueEularRightLeft = 9
-                            ValueEularUp = -3
-                            poseNow = None
-                            if euler_angle[0, 0]<3 and euler_angle[0, 0]>ValueEularUp:
+                            ValueEularUp = 3
+                            # poseNow = None
+                            if euler_angle[0, 0]<=ValueEularUp:
                                 if euler_angle[1, 0]>ValueEularRightLeft:
                                     cv2.putText(frame, "left", (0, 50), cv2.FONT_HERSHEY_SIMPLEX,
                                                 0.75, (30, 80, 0), thickness=2)
@@ -926,11 +993,11 @@ class ThreadCamera(QThread):
                                     cv2.putText(frame, "front", (0, 50), cv2.FONT_HERSHEY_SIMPLEX,
                                                 0.75, (30, 80, 0), thickness=2)
                                     poseNow = "front"
-                            elif euler_angle[0, 0]<ValueEularUp:
-                                cv2.putText(frame, "up", (0, 50), cv2.FONT_HERSHEY_SIMPLEX,
-                                                0.75, (30, 80, 0), thickness=2)
-                                poseNow = "up"
-                            elif euler_angle[0, 0]>0.5:
+                            # elif euler_angle[0, 0]<ValueEularUp:
+                            #     cv2.putText(frame, "up", (0, 50), cv2.FONT_HERSHEY_SIMPLEX,
+                            #                     0.75, (30, 80, 0), thickness=2)
+                            #     poseNow = "up"
+                            elif euler_angle[0, 0]>ValueEularUp:
                                 cv2.putText(frame, "down", (0, 50), cv2.FONT_HERSHEY_SIMPLEX,
                                                 0.75, (30, 80, 0), thickness=2)
                                 poseNow = "down"
@@ -950,6 +1017,8 @@ class ThreadCamera(QThread):
                                         pose_index+=1
                             else:
                                 self.setBoolStateFace.emit(True)
+                        else:
+                            self.setBoolStateFace.emit(True)
 
 
 
@@ -998,10 +1067,16 @@ class ThreadCameraVideo(QThread):
 
     def run(self):
         self.cap = cv2.VideoCapture(0)
+        try:
+            dir_path = sys.argv[1:][0] 
+        except:
+            dir_path =os.path.dirname(os.path.realpath(__file__))
         self.NameOfFile = str(self.getUnique())+'.avi'
         self.NameOfFileScreen = str(self.getUnique())+'.avi'
+        self.PathOfFile = tempfile.gettempdir()+"\\"+self.NameOfFile
+        self.PathNameOfFileScreen = tempfile.gettempdir()+"\\"+self.NameOfFileScreen
         fourcc = cv2.VideoWriter_fourcc(*'XVID')
-        self.out = cv2.VideoWriter(self.NameOfFile, fourcc, 20.0, (640,480))
+        self.out = cv2.VideoWriter(self.PathOfFile, fourcc, 20.0, (250,250))
         
 
         # display screen resolution, get it from your OS settings
@@ -1009,7 +1084,7 @@ class ThreadCameraVideo(QThread):
         # define the codec
         fourcc2 = cv2.VideoWriter_fourcc(*"XVID")
         # create the video write object
-        self.outScreen = cv2.VideoWriter(self.NameOfFileScreen, fourcc2, 20.0, SCREEN_SIZE)
+        self.outScreen = cv2.VideoWriter(self.PathNameOfFileScreen, fourcc2, 20.0, SCREEN_SIZE)
 
 
         count = 0
@@ -1043,9 +1118,11 @@ class ThreadCameraVideo(QThread):
 
                 self.changeStrTime.emit("Accept")
                 frame = cv2.flip(sample_frame, 2)
-                self.out.write(frame)
+                # width  = self.cap.get(cv2.cv.CV_CAP_PROP_FRAME_WIDTH)  # float
+                # height = self.cap.get(cv2.cv.CV_CAP_PROP_FRAME_HEIGHT) # float
                 dim = (250, 250)
                 frame = cv2.resize(frame, dim) 
+                self.out.write(frame)
                 rgbImage = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                 h, w, ch = rgbImage.shape
                 bytesPerLine = ch * w
@@ -1096,6 +1173,9 @@ if __name__ == '__main__':
         dir_path = sys.argv[1:][0] 
     except:
         dir_path =os.path.dirname(os.path.realpath(__file__))
+
+    print("-----------------------------------------------")
+    print(dir_path)
     #os.path.dirname(os.path.realpath(__file__))
     # print(dir_path)
     set_reg(r"Software\\Classes\\Proctoring\\",'URL Protocol', '')
