@@ -40,70 +40,44 @@ kernel32 = ctypes.WinDLL('kernel32')
 user32 = ctypes.WinDLL('user32')
 
 
+
+# from imutils import face_utils
+from imutils.face_utils import FaceAligner
+
+from mark_detector import MarkDetector
+from pose_estimator import PoseEstimator
+from stabilizer import Stabilizer
+
 import dlib
 from imutils import face_utils
 import keyboard
 
+#######################################################
+#folder to store face images
+facepath = 'images'
+CNN_INPUT_SIZE = 128
+ANGLE_THRESHOLD = 0.15
+IMAGE_PER_POSE=10
+FACE_WIDTH = 160
+
+
+
+
+mark_detector = MarkDetector() 
+try:
+    dir_path = sys.argv[1:][0] 
+except:
+    if getattr(sys, 'frozen', False):
+        dir_path = os.path.dirname(sys.executable)
+    elif __file__:
+        dir_path = os.path.dirname(__file__)
+        
+shape_predictor = dlib.shape_predictor(dir_path+'/shape_predictor_68_face_landmarks.dat')
+face_aligner = FaceAligner(shape_predictor, desiredFaceWidth=FACE_WIDTH)
+
 keyboard.add_hotkey("alt + f4", lambda: None, suppress =True)
 keyboard.add_hotkey("ctrl + c", lambda: None, suppress =True)
-
-face_landmark_path = 'shape_predictor_68_face_landmarks.dat'
-
-K = [6.5308391993466671e+002, 0.0, 3.1950000000000000e+002,
-     0.0, 6.5308391993466671e+002, 2.3950000000000000e+002,
-     0.0, 0.0, 1.0]
-D = [7.0834633684407095e-002, 6.9140193737175351e-002, 0.0, 0.0, -1.3073460323689292e+000]
-
-cam_matrix = np.array(K).reshape(3, 3).astype(np.float32)
-dist_coeffs = np.array(D).reshape(5, 1).astype(np.float32)
-
-object_pts = np.float32([[6.825897, 6.760612, 4.402142],
-                         [1.330353, 7.122144, 6.903745],
-                         [-1.330353, 7.122144, 6.903745],
-                         [-6.825897, 6.760612, 4.402142],
-                         [5.311432, 5.485328, 3.987654],
-                         [1.789930, 5.393625, 4.413414],
-                         [-1.789930, 5.393625, 4.413414],
-                         [-5.311432, 5.485328, 3.987654],
-                         [2.005628, 1.409845, 6.165652],
-                         [-2.005628, 1.409845, 6.165652],
-                         [2.774015, -2.080775, 5.048531],
-                         [-2.774015, -2.080775, 5.048531],
-                         [0.000000, -3.116408, 6.097667],
-                         [0.000000, -7.415691, 4.070434]])
-
-reprojectsrc = np.float32([[10.0, 10.0, 10.0],
-                           [10.0, 10.0, -10.0],
-                           [10.0, -10.0, -10.0],
-                           [10.0, -10.0, 10.0],
-                           [-10.0, 10.0, 10.0],
-                           [-10.0, 10.0, -10.0],
-                           [-10.0, -10.0, -10.0],
-                           [-10.0, -10.0, 10.0]])
-
-line_pairs = [[0, 1], [1, 2], [2, 3], [3, 0],
-              [4, 5], [5, 6], [6, 7], [7, 4],
-              [0, 4], [1, 5], [2, 6], [3, 7]]
-
-
-def get_head_pose(shape):
-    image_pts = np.float32([shape[17], shape[21], shape[22], shape[26], shape[36],
-                            shape[39], shape[42], shape[45], shape[31], shape[35],
-                            shape[48], shape[54], shape[57], shape[8]])
-
-    _, rotation_vec, translation_vec = cv2.solvePnP(object_pts, image_pts, cam_matrix, dist_coeffs)
-
-    reprojectdst, _ = cv2.projectPoints(reprojectsrc, rotation_vec, translation_vec, cam_matrix,
-                                        dist_coeffs)
-
-    reprojectdst = tuple(map(tuple, reprojectdst.reshape(8, 2)))
-
-    # calc euler angle
-    rotation_mat, _ = cv2.Rodrigues(rotation_vec)
-    pose_mat = cv2.hconcat((rotation_mat, translation_vec))
-    _, _, _, _, _, _, euler_angle = cv2.decomposeProjectionMatrix(pose_mat)
-
-    return reprojectdst, euler_angle
+keyboard.add_hotkey("shift + f10", lambda: None, suppress =True)
 
 
 
@@ -119,6 +93,9 @@ class GUI(QMainWindow):
             # self.dir_path =os.path.dirname(os.path.realpath(__file__))
         # self.dir_path = sys.argv[1:][0] #os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
         super(GUI,self).__init__()
+        
+        uic.loadUi(self.dir_path+'\main.ui', self) # Load the .ui file
+        self.setWindowFlags(Qt.WindowStaysOnTopHint | Qt.FramelessWindowHint)
         self.GUIPanel = self
         self.stepNow = 0
         self.appctxt = appctxt
@@ -136,10 +113,12 @@ class GUI(QMainWindow):
 
         self.WindowCameraOpened = False
 
-        uic.loadUi(self.dir_path+'\main.ui', self) # Load the .ui file
-        self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)
 
+        # Mouse Listener to prevent Right Click
         
+
+
+
         # Adapte Views
         # set Internet gid
         movie = QMovie(self.dir_path+"/imageface/internet.gif")
@@ -177,7 +156,17 @@ class GUI(QMainWindow):
         self.goNextStep()
         self.exit_code = self.appctxt.app.exec_()      # 2. Invoke appctxt.app.exec_()
         
-        
+
+
+    def on_click(self,x, y, button, pressed):
+        print('{0} at {1}'.format(
+            'Pressed' if pressed else 'Released',
+            (x, y)))
+        if not pressed:
+            # Stop listener
+            return False
+
+
     def ReduceWindowAndMove(self):
         
         headers = {'authorization': "Bearer "+str(self.token)}
@@ -226,7 +215,7 @@ class GUI(QMainWindow):
         font-size: 15px;
         font-weight: 700;}""")
         self.LoaderUpload.predictButton.setEnabled(False)
-
+        self.ThreadUploadingFiles = True
         self.uploadThread = threading.Thread(target=self.upload_fileCamera, args=())
         self.uploadThread.start()
 
@@ -274,7 +263,7 @@ class GUI(QMainWindow):
         uic.loadUi(self.dir_path+'\mainCamera.ui', self.ex) # Load the .ui file
 
         self.ex.setAttribute(Qt.WA_TranslucentBackground)
-        self.ex.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)
+        self.ex.setWindowFlags(Qt.WindowStaysOnTopHint | Qt.FramelessWindowHint)
         self.IsMinimized = False
         self.ex.minimizeButton.clicked.connect(lambda: self.MinimizeVideo())
         self.ex.EndExamButton.clicked.connect(lambda: self.EndTheExam())
@@ -327,39 +316,44 @@ class GUI(QMainWindow):
         i = 0
         uniqueId = self.getUnique(totalsize)
         with open(filename, 'rb') as file:
-            while True:
-                data = file.read(chunksize)
-                f = open(tempfile.gettempdir()+"\\"+"fileDownload", "wb")
-                f.write(data)
-                f.close()
-                if not data:
-                    sys.stderr.write("\n")
-                    break
-                readsofar += len(data)
-                percent = readsofar * 1e2 / totalsize
-                
-                headers = {
-                    'Access-Control-Max-Age':'86400',
-                    'Access-Control-Allow-Methods': 'POST,OPTIONS' ,
-                    'Access-Control-Allow-Headers': 'uploader-chunk-number,uploader-chunks-total,uploader-file-id', 
-                    'Access-Control-Allow-Origin':'http://localhost:3000',
-                    'authorization': "Bearer "+token,
-                    'uploader-file-id': str(uniqueId),
-                    'uploader-chunks-total': str(totalChucks),
-                    'uploader-chunk-number': str(i)
-                    }
-
-            
-                files = {'file': ('fileDownload',open(tempfile.gettempdir()+"\\"+"fileDownload", 'rb'),'application/octet-stream')}
+            while self.ThreadUploadingFiles:
                 try:
-                    r = requests.request('POST',url,files=files,headers=headers, verify=False)
-                    # print(r.text)
+                    data = file.read(chunksize)
+                    f = open(tempfile.gettempdir()+"\\"+"fileDownload", "wb")
+                    f.write(data)
+                    f.close()
+                    if not data:
+                        sys.stderr.write("\n")
+                        break
+                    readsofar += len(data)
+                    percent = readsofar * 1e2 / totalsize
                     
-                    i+=1
-                except Exception as exc:
-                    print(exc)
-                self.progressBarValue(int(percent/2))
-                print("\r{percent:3.0f}%".format(percent=percent))
+                    headers = {
+                        'Access-Control-Max-Age':'86400',
+                        'Access-Control-Allow-Methods': 'POST,OPTIONS' ,
+                        'Access-Control-Allow-Headers': 'uploader-chunk-number,uploader-chunks-total,uploader-file-id', 
+                        'Access-Control-Allow-Origin':'http://localhost:3000',
+                        'authorization': "Bearer "+token,
+                        'uploader-file-id': str(uniqueId),
+                        'uploader-chunks-total': str(totalChucks),
+                        'uploader-chunk-number': str(i)
+                        }
+
+                
+                    files = {'file': ('fileDownload',open(tempfile.gettempdir()+"\\"+"fileDownload", 'rb'),'application/octet-stream')}
+                    isUploaded = False
+                    while not isUploaded:
+                        try:
+                            r = requests.request('POST',url,files=files,headers=headers, verify=False)
+                            # print(r.text)
+                            isUploaded = True
+                            i+=1
+                        except Exception as exc:
+                            print(exc)
+                    self.progressBarValue(int(percent/2))
+                    print("\r{percent:3.0f}%".format(percent=percent))
+                except:
+                    pass
 
         self.upload_fileScreen()
        
@@ -375,39 +369,44 @@ class GUI(QMainWindow):
         i = 0
         uniqueId = self.getUnique(totalsize)
         with open(filename, 'rb') as file:
-            while True:
-                data = file.read(chunksize)
-                f = open(tempfile.gettempdir()+"\\"+"fileDownload", "wb")
-                f.write(data)
-                f.close()
-                if not data:
-                    sys.stderr.write("\n")
-                    break
-                readsofar += len(data)
-                percent = readsofar * 1e2 / totalsize
-                
-                headers = {
-                    'Access-Control-Max-Age':'86400',
-                    'Access-Control-Allow-Methods': 'POST,OPTIONS' ,
-                    'Access-Control-Allow-Headers': 'uploader-chunk-number,uploader-chunks-total,uploader-file-id', 
-                    'Access-Control-Allow-Origin':'http://localhost:3000',
-                    'authorization': "Bearer "+token,
-                    'uploader-file-id': str(uniqueId),
-                    'uploader-chunks-total': str(totalChucks),
-                    'uploader-chunk-number': str(i)
-                    }
-
-            
-                files = {'file': ("fileDownload",open(tempfile.gettempdir()+'\\'+'fileDownload', 'rb'),'application/octet-stream')}
+            while self.ThreadUploadingFiles:
                 try:
-                    r = requests.request('POST',url,files=files,headers=headers, verify=False)
-                    # print(r.text)
+                    data = file.read(chunksize)
+                    f = open(tempfile.gettempdir()+"\\"+"fileDownload", "wb")
+                    f.write(data)
+                    f.close()
+                    if not data:
+                        sys.stderr.write("\n")
+                        break
+                    readsofar += len(data)
+                    percent = readsofar * 1e2 / totalsize
                     
-                    i+=1
-                except Exception as exc:
-                    print(exc)
-                self.progressBarValue(int(percent/2+50))
-                print("\r{percent:3.0f}%".format(percent=percent))
+                    headers = {
+                        'Access-Control-Max-Age':'86400',
+                        'Access-Control-Allow-Methods': 'POST,OPTIONS' ,
+                        'Access-Control-Allow-Headers': 'uploader-chunk-number,uploader-chunks-total,uploader-file-id', 
+                        'Access-Control-Allow-Origin':'http://localhost:3000',
+                        'authorization': "Bearer "+token,
+                        'uploader-file-id': str(uniqueId),
+                        'uploader-chunks-total': str(totalChucks),
+                        'uploader-chunk-number': str(i)
+                        }
+
+                
+                    files = {'file': ("fileDownload",open(tempfile.gettempdir()+'\\'+'fileDownload', 'rb'),'application/octet-stream')}
+                    isUploaded = False
+                    while not isUploaded:
+                        try:
+                            r = requests.request('POST',url,files=files,headers=headers, verify=False)
+                            # print(r.text)
+                            isUploaded = True
+                            i+=1
+                        except Exception as exc:
+                            print(exc)
+                    self.progressBarValue(int(percent/2+50))
+                    print("\r{percent:3.0f}%".format(percent=percent))
+                except:
+                    pass
         self.LoaderUpload.predictButton.setEnabled(True)
         self.LoaderUpload.predictButton.setStyleSheet("""QPushButton{background-color: #0095ff;
             border-style: outset;
@@ -445,7 +444,10 @@ class GUI(QMainWindow):
             self.ex.setFixedWidth(249)
             self.animation.start()
 
+        
+
     def close(self):
+        self.ThreadUploadingFiles = False
         QCoreApplication.exit(0)
 
     
@@ -472,7 +474,7 @@ class GUI(QMainWindow):
         uic.loadUi(self.dir_path+'\error.ui', self.error) # Load the .ui file
         self.error.errorLabel.setText("Error in the internet")
         
-        self.error.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)
+        self.error.setWindowFlags(Qt.WindowStaysOnTopHint | Qt.FramelessWindowHint)
         self.error.okError.clicked.connect(self.restart)
         
         
@@ -493,8 +495,9 @@ class GUI(QMainWindow):
         font-size: 15px;
         font-weight: 700;}""")
         self.predictButton.setEnabled(False)
+        
         self.pagerWindow.setCurrentIndex(self.stepNow)
-        if self.stepNow == 0:
+        if self.stepNow == 0: # step 0
             print("Checking Internet...")
 
             
@@ -502,7 +505,7 @@ class GUI(QMainWindow):
             self.checkInternetThread.ShowErrorPanel.connect(self.goToErrorPage)
             self.checkInternetThread.GoNextStep.connect(self.goNextStepSlotOutSide)
             self.checkInternetThread.start()
-        elif self.stepNow == 1:
+        elif self.stepNow == 1: # step 1
 
             self.checkCookiesThread = threading.Thread(target=self.checkCookies, args=())
             self.checkCookiesThread.start()
@@ -512,7 +515,7 @@ class GUI(QMainWindow):
             loop.exec_()
 
             # self.checkCookies()
-        elif self.stepNow == 2:
+        elif self.stepNow == 2: # step 2
             print("Device Checking...")
             # Make a Check for All Devices Thread
             
@@ -525,7 +528,7 @@ class GUI(QMainWindow):
 
             
             
-        elif self.stepNow == 3:
+        elif self.stepNow == 3: # step 3
             self.predict()
         elif self.stepNow == 4:
             self.predictButton.setEnabled(True)
@@ -603,6 +606,21 @@ class GUI(QMainWindow):
             self.TestName = response.json()['test']['name']
             self.TestDuration = str(response.json()['test']['duration']) +' m'
             self.AllNotAllowed = response.json()['testWhiteListApps']
+            listAllow = list(['SettingSyncHost.exe','MsMpEng.exe','SASrv.exe','unsecapp.exe','AGMService.exe',
+                            'AGSService.exe','CAudioFilterAgent64.exe','igfxHK.exe','sihost.exe','SecurityHealthSystray.exe',
+                            'SearchFilterHost.exe','WmiPrvSE.exe','fbs.exe','RtkBtManServ.exe','ETDService.exe'
+                            'SearchProtocolHost.exe','dllhost.exe','PanGPA.exe','IEMonitor.exe','ETDCtrl.exe',
+                            'ctfmon.exe','cmd.exe','chrome.exe','SearchUI.exe','RuntimeBroker.exe','jucheck.exe',
+                              'ShellExperienceHost.exe','Code.exe','svchost.exe','taskhostw.exe','Video.UI.exe',
+                              'SecurityHealthService.exe','winlogon.exe','sqlwriter.exe','ETDCtrlHelper.exe',
+                              'fontdrvhost.exe','backgroundTaskHost.exe','conhost.exe','igfxTray.exe',
+                              'python.exe','explorer.exe','svchost.exe','Proctoring.exe'])
+            for item in listAllow:
+                prog = {'deleted': False, 'SystemApp': {'serviceName': item }}
+                self.AllNotAllowed.append(prog)
+
+            # print("----------------------------------")
+            # print(self.AllNotAllowed)
             self.TestDurationInt = str(response.json()['test']['duration'])
             
             self.username.setText('hi, '+self.Username)
@@ -641,11 +659,18 @@ class GUI(QMainWindow):
 
         for proc in psutil.process_iter():
             # check whether the process name matches
-            # print(proc.name())
-            # print(self.AllNotAllowed)
+            isExist = False
             for program in self.AllNotAllowed:
                 if proc.name() == program['SystemApp']['serviceName']:
+                    isExist = True
+
+            if not isExist:
+                try:
                     proc.kill()
+                    print("--------------------------------")
+                    print("Kill "+proc.name())
+                except:
+                    pass
 
     @pyqtSlot(bool)
     def goNextStepSlotOutSide(self,Accept):
@@ -664,7 +689,7 @@ class GUI(QMainWindow):
         uic.loadUi(self.dir_path+'\error.ui', self.error) # Load the .ui file
         self.error.errorLabel.setText(statment)
         
-        self.error.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)
+        self.error.setWindowFlags(Qt.WindowStaysOnTopHint | Qt.FramelessWindowHint)
         self.error.okError.clicked.connect(self.restart)
         self.error.show()
 
@@ -716,6 +741,8 @@ class GUI(QMainWindow):
         th.setBoolStateFace.connect(self.setBoolImageFace)
         th.checkingEnded.connect(self.goCheckingForPose)
         th.start()
+
+
 
 # Internet Connection as it handle Requests
 class ThreadInternetConnection(QThread):
@@ -901,23 +928,23 @@ class ThreadCamera(QThread):
     setPose = pyqtSignal(str)
     setBoolStateFace = pyqtSignal(bool)
     checkingEnded = pyqtSignal(str)
-    # Image path 
-    image_path = 'image.jpg'
+
     def __init__(self,window,token):
         super(ThreadCamera,self).__init__(window)
         self.token = token
         self.FinalImage = 5
         self.AllImages = []
 
-    def saveImage(self,direction,image):
-        # Save the image to the server with this id
-        imencoded = cv2.imencode('.jpg', image)[1]
-        fileName = direction+'image.jpg'
-        print(fileName)
-        files = {'files': (fileName, imencoded.tostring(), 'image/jpeg', {'Expires': '0'})}
-        headers = {'authorization': "Bearer "+str(self.token)}
-        sendThread = threading.Thread(target=self.sendImage, args=(files,headers,))
-        sendThread.start()
+    def saveImage(self,direction,count,image):
+        
+        if count == IMAGE_PER_POSE:
+            # Save the image to the server with this id
+            imencoded = cv2.imencode('.jpg', image)[1]
+            fileName = str(direction)+'image.jpg'
+            files = {'files': (fileName, imencoded.tostring(), 'image/jpeg', {'Expires': '0'})}
+            headers = {'authorization': "Bearer "+str(self.token)}
+            sendThread = threading.Thread(target=self.sendImage, args=(files,headers,))
+            sendThread.start()
         
     def sendImage(self,files,headers):
         try:
@@ -938,115 +965,162 @@ class ThreadCamera(QThread):
         # print(self.FinalImage)
         # print(self.AllImages)
 
+
     def run(self):
-        try:
-            self.dir_path = sys.argv[1:][0] 
-        except:
-            if getattr(sys, 'frozen', False):
-                self.dir_path = os.path.dirname(sys.executable)
-            elif __file__:
-                self.dir_path = os.path.dirname(__file__)
-         #os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
         cap = cv2.VideoCapture(0)
         
-        # face_cascade = cv2.CascadeClassifier(self.dir_path+'/haarcascade_frontalface_alt2.xml')
+
+        poses=['frontal','right','left','up','down']
+       
         
-        detector = dlib.get_frontal_face_detector()
-        # detector = dlib.cnn_face_detection_model_v1("mmod_human_face_detector.dat")
-
-        predictor = dlib.shape_predictor(self.dir_path+"\\"+face_landmark_path)
-
-        pose = ['front','right','left','down','up']
+        ret, sample_frame = cap.read()
         pose_index = 0
-        count = 1
-        takePhotoEvery = 30
-        while pose_index < 4:
-            ret, sample_frame = cap.read()
-            if ret:
-                frame = cv2.flip(sample_frame, 2)
-                face_rects = detector(frame, 0)
+        count = 0
+        if ret==False:
+            return    
+            
+        # Introduce pose estimator to solve pose. Get one frame to setup the
+        # estimator according to the image size.
+        height, width = sample_frame.shape[:2]
+        pose_estimator = PoseEstimator(img_size=(height, width))
+        
+        # Introduce scalar stabilizers for pose.
+        pose_stabilizers = [Stabilizer(
+            state_num=2,
+            measure_num=1,
+            cov_process=0.1,
+            cov_measure=0.1) for _ in range(6)]
+        images_saved_per_pose=0
+        number_of_images = 0
+        
+        while pose_index<5:
+            saveit = False
+            # Read frame, crop it, flip it, suits your needs.
+            ret, frame = cap.read()
+            if ret is False:
+                break
+            if count % 10 !=0: # skip 10 frames
+                count+=1
+                continue
+            if images_saved_per_pose==IMAGE_PER_POSE:
+                pose_index+=1
+                images_saved_per_pose=0
+
+            # If frame comes from webcam, flip it so it looks like a mirror.
+            frame = cv2.flip(frame, 2)
+
+            frame_for_cam=frame.copy()
+            original_frame=frame.copy()
+            frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            # Show the image
+
+
+            # here responsible for show image
+            height, width = frame.shape[:2] 
+            # frame =frame[int(height/4):int(3/4*height),int(width/3):int(2/3*width)]
+            frame_for_cam =frame_for_cam[int(0):int(7/8*height),int(width/5):int(4/5*width)]
+            
+            scale_percent = 55 # percent of original size
+            widthNew = int(frame_for_cam.shape[1] * scale_percent / 100)
+            heightNew = int(frame_for_cam.shape[0] * scale_percent / 100)
+            dimOld = (widthNew, heightNew)
+            frame_for_cam = cv2.resize(frame_for_cam, dimOld, interpolation = cv2.INTER_AREA)
+
+            rgbImage = cv2.cvtColor(frame_for_cam, cv2.COLOR_BGR2RGB)
+            h, w, ch = rgbImage.shape
+            bytesPerLine = ch * w
+
+            convertToQtFormat = QImage(rgbImage.data, w, h, bytesPerLine, QImage.Format_RGB888)
+            self.changePixmap.emit(convertToQtFormat)
                 
-                if len(face_rects) > 0:
-                    for i, d in enumerate(face_rects):
-                        frame = cv2.rectangle(frame,(d.left(),d.top()),(d.right(), d.bottom()),(255,0,0),2)
-                        # print(abs(d.left() - d.right())*(d.top() - d.bottom()))
-                        if abs((d.left() - d.right())*(d.top() - d.bottom()))>46564 :
-                            frameWithoutRec = frame
-                            shape = predictor(frame, face_rects[0])
-                            shape = face_utils.shape_to_np(shape)
+            # end of show image
 
-                            reprojectdst, euler_angle = get_head_pose(shape)
-                            
-                            ValueEularRightLeft = 9
-                            ValueEularUp = 3
-                            # poseNow = None
-                            if euler_angle[0, 0]<=ValueEularUp:
-                                if euler_angle[1, 0]>ValueEularRightLeft:
-                                    cv2.putText(frame, "left", (0, 50), cv2.FONT_HERSHEY_SIMPLEX,
-                                                0.75, (30, 80, 0), thickness=2)
-                                    poseNow = 'left'
-                                    
-                                elif euler_angle[1, 0]<-ValueEularRightLeft:
-                                    cv2.putText(frame, "right", (0, 50), cv2.FONT_HERSHEY_SIMPLEX,
-                                                0.75, (30, 80, 0), thickness=2)
-                                    poseNow = "right"
-                                elif euler_angle[1, 0]>=-ValueEularRightLeft and euler_angle[1, 0]<=ValueEularRightLeft:
-                                    cv2.putText(frame, "front", (0, 50), cv2.FONT_HERSHEY_SIMPLEX,
-                                                0.75, (30, 80, 0), thickness=2)
-                                    poseNow = "front"
-                            # elif euler_angle[0, 0]<ValueEularUp:
-                            #     cv2.putText(frame, "up", (0, 50), cv2.FONT_HERSHEY_SIMPLEX,
-                            #                     0.75, (30, 80, 0), thickness=2)
-                            #     poseNow = "up"
-                            elif euler_angle[0, 0]>ValueEularUp:
-                                cv2.putText(frame, "down", (0, 50), cv2.FONT_HERSHEY_SIMPLEX,
-                                                0.75, (30, 80, 0), thickness=2)
-                                poseNow = "down"
-                            print(poseNow)
-                            self.setPose.emit('Look '+pose[pose_index])
-                            if poseNow == pose[pose_index]:
-                                # print(poseNow)
-                                self.setBoolStateFace.emit(False)
-                                takePhotoEvery -=1
-                                if takePhotoEvery == 0:
-                                    takePhotoEvery = 20
-                                    
-                                    count -=1
-                                    self.saveImage(pose[pose_index],frameWithoutRec)
-                                    if count == 0:
-                                        count = 1
-                                        pose_index+=1
-                            else:
-                                self.setBoolStateFace.emit(True)
-                        else:
-                            self.setBoolStateFace.emit(True)
-
-
-
+            #
+            facebox = mark_detector.extract_cnn_facebox(frame)
+        
+            if facebox is not None:
+                # Detect landmarks from image of 128x128.
+                x1=max(facebox[0]-0,0)
+                x2=min(facebox[2]+0,width)
+                y1=max(facebox[1]-0,0)
+                y2=min(facebox[3]+0,height)
                 
-                # Show the image
+                face = frame[y1: y2,x1:x2]
+                face_img = cv2.resize(face, (CNN_INPUT_SIZE, CNN_INPUT_SIZE))
+                face_img = cv2.cvtColor(face_img, cv2.COLOR_BGR2RGB)
+        
+                marks = mark_detector.detect_marks([face_img])
+        
+                # Convert the marks locations from local CNN to global image.
+                marks *= (facebox[2] - facebox[0])
+                marks[:, 0] += facebox[0]
+                marks[:, 1] += facebox[1]
+            
+                # Try pose estimation with 68 points.
+                pose = pose_estimator.solve_pose_by_68_points(marks)
+        
+                # Stabilize the pose.
+                steady_pose = []
+                pose_np = np.array(pose).flatten()
+                for value, ps_stb in zip(pose_np, pose_stabilizers):
+                    ps_stb.update([value])
+                    steady_pose.append(ps_stb.state[0])
+                steady_pose = np.reshape(steady_pose, (-1, 3))
+        
+                if pose_index==0:
+                    if abs(steady_pose[0][0])<ANGLE_THRESHOLD and abs(steady_pose[0][1])<ANGLE_THRESHOLD:
+                        images_saved_per_pose+=1
+                        self.saveImage(poses[pose_index],images_saved_per_pose,frame)  
+                        self.setBoolStateFace.emit(False)
+                    else:
+                        self.setBoolStateFace.emit(True)         
+                if pose_index==1:
+                    if steady_pose[0][0]>ANGLE_THRESHOLD:
+                        images_saved_per_pose+=1
+                        self.saveImage(poses[pose_index],images_saved_per_pose,frame)
+                        self.setBoolStateFace.emit(False)
+                    else:
+                        self.setBoolStateFace.emit(True)  
+                if pose_index==2:
+                    if steady_pose[0][0]<-ANGLE_THRESHOLD:
+                        images_saved_per_pose+=1
+                        self.saveImage(poses[pose_index],images_saved_per_pose,frame)
+                        self.setBoolStateFace.emit(False)
+                    else:
+                        self.setBoolStateFace.emit(True)  
+                if pose_index==3:
+                    if steady_pose[0][1]<-ANGLE_THRESHOLD:
+                        images_saved_per_pose+=1
+                        self.saveImage(poses[pose_index],images_saved_per_pose,frame)
+                        self.setBoolStateFace.emit(False)
+                    else:
+                        self.setBoolStateFace.emit(True)  
+                if pose_index==4:
+                    if steady_pose[0][1]>ANGLE_THRESHOLD:
+                        images_saved_per_pose+=1
+                        self.saveImage(poses[pose_index],images_saved_per_pose,frame)
+                        self.setBoolStateFace.emit(False)
+                    else:
+                        self.setBoolStateFace.emit(True)  
+                # Show preview.
+                if pose_index>=5:
+                    self.setPose.emit('Thank you')
+                    break
+
+                # frame = cv2.rectangle(frame, (x1,y1), (x2,y2),(255,255,0),2)
+
+            self.setPose.emit('Look '+str(poses[pose_index] +' : '+ str(images_saved_per_pose)+'/'+str(IMAGE_PER_POSE)))
+            # self.setPose.emit('Look '+str(poses[pose_index]))
+             
                 
                 
-                height, width = frame.shape[:2] 
-                # frame =frame[int(height/4):int(3/4*height),int(width/3):int(2/3*width)]
-                frame =frame[int(0):int(7/8*height),int(width/5):int(4/5*width)]
+                        
                 
-                scale_percent = 55 # percent of original size
-                widthNew = int(frame.shape[1] * scale_percent / 100)
-                heightNew = int(frame.shape[0] * scale_percent / 100)
-                dimOld = (widthNew, heightNew)
-                frame = cv2.resize(frame, dimOld, interpolation = cv2.INTER_AREA)
-
-                rgbImage = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                h, w, ch = rgbImage.shape
-                bytesPerLine = ch * w
-
-                convertToQtFormat = QImage(rgbImage.data, w, h, bytesPerLine, QImage.Format_RGB888)
-                self.changePixmap.emit(convertToQtFormat)
-
         cap.release()
         self.setPose.emit('click Next')
         self.checkingEnded.emit('Success')
+    
+    
             
 # Main Camera for video exam
 Blur_Threshold=125
@@ -1081,7 +1155,7 @@ class ThreadCameraVideo(QThread):
         
 
         # display screen resolution, get it from your OS settings
-        SCREEN_SIZE = pyautogui.size()
+        SCREEN_SIZE = (250,250) #pyautogui.size()
         # define the codec
         fourcc2 = cv2.VideoWriter_fourcc(*"XVID")
         # create the video write object
@@ -1096,13 +1170,15 @@ class ThreadCameraVideo(QThread):
             frameScreen = np.array(imgScreen)
             # convert colors from BGR to RGB
             frameScreen = cv2.cvtColor(frameScreen, cv2.COLOR_BGR2RGB)
+            dimOld = (250, 250)
+            frameScreen = cv2.resize(frameScreen, dimOld, interpolation = cv2.INTER_AREA)
             # write the frame
             self.outScreen.write(frameScreen)
             ret, sample_frame = self.cap.read()
             count+= 1
             if ret:
                 self.textLight = ''
-                if count % 5==0:
+                if count % IMAGE_PER_POSE==0:
                     gray = cv2.cvtColor(sample_frame, cv2.COLOR_BGR2GRAY)
                     fm = cv2.Laplacian(gray, cv2.CV_64F).var()
                     

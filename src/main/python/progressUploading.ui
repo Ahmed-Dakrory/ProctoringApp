@@ -106,7 +106,7 @@ border-color: #FFF6F9;
        <property name="styleSheet">
         <string notr="true">QFrame{
 	border-radius: 150px;
-	background-color: qconicalgradient(cx:0.5, cy:0.5, angle:90, stop:0.749 rgba(255, 0, 127, 0), stop:0.750 rgb(119, 240, 54));
+	background-color: qconicalgradient(cx:0.5, cy:0.5, angle:90, stop:0.749 rgba(255, 0, 127, 0), stop:1.750 rgb(119, 240, 54));
 }</string>
        </property>
        <property name="frameShape">
@@ -312,38 +312,6 @@ color: #FFFFFF</string>
     <property name="title">
      <string/>
     </property>
-    <widget class="QPushButton" name="exitButton">
-     <property name="geometry">
-      <rect>
-       <x>110</x>
-       <y>510</y>
-       <width>21</width>
-       <height>21</height>
-      </rect>
-     </property>
-     <property name="styleSheet">
-      <string notr="true">QPushButton{background-color:rgba(255, 91, 26, 235);
-        border-style: outset;
-        border-width:0;
-        border-radius: 5px;
-        border-color: #e8e8e8;
-        color: #fbfbfb;
-        font-size: 13px;
-        font-weight: 900;}
-        
-        QPushButton:hover{background-color:  rgb(94, 99, 97);
-        border-style: outset;
-        border-width: 0px;
-        border-radius: 5px;
-        border-color: #e8e8e8;
-        color: #565050;
-        font-size: 13px;
-        font-weight: 700;}</string>
-     </property>
-     <property name="text">
-      <string>X</string>
-     </property>
-    </widget>
     <widget class="QLabel" name="username">
      <property name="geometry">
       <rect>

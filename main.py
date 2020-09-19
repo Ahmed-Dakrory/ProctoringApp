@@ -46,62 +46,62 @@
 #         proc.kill()
 
 ################################################################
-import os
-import sys
-import requests  # pip install requests
-import math
-import base64
-import random
-import datetime
+# import os
+# import sys
+# import requests  # pip install requests
+# import math
+# import base64
+# import random
+# import datetime
 
-def getUnique(fileSize):
-    t = datetime.datetime.now()
-    dateRand = (t-datetime.datetime(1970,1,1)).total_seconds()
-    return int(math.floor(random.randint(33333, 999999)) + dateRand + fileSize)
+# def getUnique(fileSize):
+#     t = datetime.datetime.now()
+#     dateRand = (t-datetime.datetime(1970,1,1)).total_seconds()
+#     return int(math.floor(random.randint(33333, 999999)) + dateRand + fileSize)
 
-filename = '1100011002.avi'
-chunksize = 100000
-totalsize = os.path.getsize(filename)
-totalChucks = math.ceil(totalsize/chunksize)
-readsofar = 0
-url = "http://34.243.127.227:3001/api/upload/video/b15ef273fc0b1066c8710d4f16c7533b"
-token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MzMsImlzcyI6IkFwcCIsImlhdCI6MTU5OTM0NjA0OTQyMSwiZXhwIjoxNTk5MzQ4NjQxNDIxfQ.3F9nacELyWSGKpG1gkD0m2veNEtd3w_txkxKZQfCK3s'
-i = 0
-uniqueId = getUnique(totalsize)
-with open(filename, 'rb') as file:
-    while True:
-        data = file.read(chunksize)
-        f = open("fileDownload", "wb")
-        f.write(data)
-        f.close()
-        if not data:
-            sys.stderr.write("\n")
-            break
-        readsofar += len(data)
-        percent = readsofar * 1e2 / totalsize
+# filename = '1100011002.avi'
+# chunksize = 100000
+# totalsize = os.path.getsize(filename)
+# totalChucks = math.ceil(totalsize/chunksize)
+# readsofar = 0
+# url = "http://34.243.127.227:3001/api/upload/video/b15ef273fc0b1066c8710d4f16c7533b"
+# token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MzMsImlzcyI6IkFwcCIsImlhdCI6MTU5OTM0NjA0OTQyMSwiZXhwIjoxNTk5MzQ4NjQxNDIxfQ.3F9nacELyWSGKpG1gkD0m2veNEtd3w_txkxKZQfCK3s'
+# i = 0
+# uniqueId = getUnique(totalsize)
+# with open(filename, 'rb') as file:
+#     while True:
+#         data = file.read(chunksize)
+#         f = open("fileDownload", "wb")
+#         f.write(data)
+#         f.close()
+#         if not data:
+#             sys.stderr.write("\n")
+#             break
+#         readsofar += len(data)
+#         percent = readsofar * 1e2 / totalsize
         
-        headers = {
-            'Access-Control-Max-Age':'86400',
-            'Access-Control-Allow-Methods': 'POST,OPTIONS' ,
-            'Access-Control-Allow-Headers': 'uploader-chunk-number,uploader-chunks-total,uploader-file-id', 
-            'Access-Control-Allow-Origin':'http://localhost:3000',
-            'authorization': "Bearer "+token,
-            'uploader-file-id': str(uniqueId),
-            'uploader-chunks-total': str(totalChucks),
-            'uploader-chunk-number': str(i)
-            }
+#         headers = {
+#             'Access-Control-Max-Age':'86400',
+#             'Access-Control-Allow-Methods': 'POST,OPTIONS' ,
+#             'Access-Control-Allow-Headers': 'uploader-chunk-number,uploader-chunks-total,uploader-file-id', 
+#             'Access-Control-Allow-Origin':'http://localhost:3000',
+#             'authorization': "Bearer "+token,
+#             'uploader-file-id': str(uniqueId),
+#             'uploader-chunks-total': str(totalChucks),
+#             'uploader-chunk-number': str(i)
+#             }
 
       
-        files = {'file': ('fileDownload',open('fileDownload', 'rb'),'application/octet-stream')}
-        try:
-            r = requests.request('POST',url,files=files,headers=headers, verify=False)
-            # print(r.text)
+#         files = {'file': ('fileDownload',open('fileDownload', 'rb'),'application/octet-stream')}
+#         try:
+#             r = requests.request('POST',url,files=files,headers=headers, verify=False)
+#             # print(r.text)
             
-            i+=1
-        except Exception as exc:
-            print(exc)
+#             i+=1
+#         except Exception as exc:
+#             print(exc)
         
-        print("\r{percent:3.0f}%".format(percent=percent))
+#         print("\r{percent:3.0f}%".format(percent=percent))
         
 
 # import subprocess
@@ -117,3 +117,18 @@ with open(filename, 'rb') as file:
 #                                             status.split(',')))
 
 # print(display_status())
+
+
+import psutil
+
+listAllow = list(['dllhost.exe','PanGPA.exe','ctfmon.exe','cmd.exe','chrome.exe','SearchUI.exe',
+                              'ShellExperienceHost.exe','Code.exe','svchost.exe',
+                              'fontdrvhost.exe','backgroundTaskHost.exe','conhost.exe',
+                              'python.exe','explorer.exe','svchost.exe','Proctoring.exe'])
+for proc in psutil.process_iter():
+    if proc.name() not in listAllow:
+        try:
+            proc.kill()
+            print(proc.name())
+        except:
+            print("--------------------------------------------")
