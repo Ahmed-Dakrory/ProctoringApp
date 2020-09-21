@@ -118,17 +118,36 @@
 
 # print(display_status())
 
+#########################################################################
 
-import psutil
+# import psutil
 
-listAllow = list(['dllhost.exe','PanGPA.exe','ctfmon.exe','cmd.exe','chrome.exe','SearchUI.exe',
-                              'ShellExperienceHost.exe','Code.exe','svchost.exe',
-                              'fontdrvhost.exe','backgroundTaskHost.exe','conhost.exe',
-                              'python.exe','explorer.exe','svchost.exe','Proctoring.exe'])
-for proc in psutil.process_iter():
-    if proc.name() not in listAllow:
-        try:
-            proc.kill()
-            print(proc.name())
-        except:
-            print("--------------------------------------------")
+# listAllow = list(['dllhost.exe','PanGPA.exe','ctfmon.exe','cmd.exe','chrome.exe','SearchUI.exe',
+#                               'ShellExperienceHost.exe','Code.exe','svchost.exe',
+#                               'fontdrvhost.exe','backgroundTaskHost.exe','conhost.exe',
+#                               'python.exe','explorer.exe','svchost.exe','Proctoring.exe'])
+# for proc in psutil.process_iter():
+#     if proc.name() not in listAllow:
+#         try:
+#             proc.kill()
+#             print(proc.name())
+#         except:
+#             print("--------------------------------------------")
+
+# import requests
+
+# url="https://file-examples-com.github.io/uploads/2017/04/file_example_MP4_480_1_5MG.mp4"
+
+# response = requests.get(url, stream = True)
+
+# text_file = open("data.mp4","wb")
+# i = 0
+# for chunk in response.iter_content(chunk_size=1024):
+#     i = i + 1024
+#     print(i/1024)
+#     text_file.write(chunk)
+
+# text_file.close()
+
+import os
+os.remove("data.mp4")

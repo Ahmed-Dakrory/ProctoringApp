@@ -1146,18 +1146,18 @@ class ThreadCameraVideo(QThread):
             dir_path = sys.argv[1:][0] 
         except:
             dir_path =os.path.dirname(os.path.realpath(__file__))
-        self.NameOfFile = str(self.getUnique())+'.avi'
-        self.NameOfFileScreen = str(self.getUnique())+'.avi'
+        self.NameOfFile = str(self.getUnique())+'.mp4'
+        self.NameOfFileScreen = str(self.getUnique())+'.mp4'
         self.PathOfFile = tempfile.gettempdir()+"\\"+self.NameOfFile
         self.PathNameOfFileScreen = tempfile.gettempdir()+"\\"+self.NameOfFileScreen
-        fourcc = cv2.VideoWriter_fourcc(*'XVID')
+        fourcc = cv2.VideoWriter_fourcc(*'FMP4')
         self.out = cv2.VideoWriter(self.PathOfFile, fourcc, 20.0, (250,250))
         
 
         # display screen resolution, get it from your OS settings
         SCREEN_SIZE = (250,250) #pyautogui.size()
         # define the codec
-        fourcc2 = cv2.VideoWriter_fourcc(*"XVID")
+        fourcc2 = cv2.VideoWriter_fourcc(*"FMP4")
         # create the video write object
         self.outScreen = cv2.VideoWriter(self.PathNameOfFileScreen, fourcc2, 20.0, SCREEN_SIZE)
 
