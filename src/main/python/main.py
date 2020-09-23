@@ -44,9 +44,7 @@ user32 = ctypes.WinDLL('user32')
 # from imutils import face_utils
 from imutils.face_utils import FaceAligner
 
-from mark_detector import MarkDetector
-from pose_estimator import PoseEstimator
-from stabilizer import Stabilizer
+import tensorflow as tf
 
 import dlib
 from imutils import face_utils
@@ -54,7 +52,6 @@ import keyboard
 
 #######################################################
 #folder to store face images
-facepath = 'images'
 CNN_INPUT_SIZE = 128
 ANGLE_THRESHOLD = 0.15
 IMAGE_PER_POSE=10
@@ -63,7 +60,6 @@ FACE_WIDTH = 160
 
 
 
-mark_detector = MarkDetector() 
 try:
     dir_path = sys.argv[1:][0] 
 except:
@@ -71,9 +67,458 @@ except:
         dir_path = os.path.dirname(sys.executable)
     elif __file__:
         dir_path = os.path.dirname(__file__)
-        
-shape_predictor = dlib.shape_predictor(dir_path+'/shape_predictor_68_face_landmarks.dat')
-face_aligner = FaceAligner(shape_predictor, desiredFaceWidth=FACE_WIDTH)
+
+#folder to store face images
+CNN_INPUT_SIZE = 128
+ANGLE_THRESHOLD = 0.15
+IMAGE_PER_POSE=5
+FACE_WIDTH = 160
+
+# pyinstaller --onefile --add-data assets/deploy.prototxt;assets --add-data assets/model.txt;assets --add-data assets/res10_300x300_ssd_iter_140000.caffemodel;assets --add-data assets/pose_model/saved_model.pb;assets/pose_model --add-data assets/pose_model/variables/variables.data-00000-of-00001;assets/pose_model/variables --add-data assets/pose_model/variables/variables.index;assets/pose_model/variables --add-data shape_predictor_68_face_landmarks.dat;. Camera_Captureall.py
+
+"""Human facial landmark detector based on Convolutional Neural Network."""
+
+class PoseEstimator:
+    """Estimate head pose according to the facial landmarks"""
+
+    def __init__(self, img_size=(480, 640)):
+        self.size = img_size
+
+        # 3D model points.
+        self.model_points = np.array([
+            (0.0, 0.0, 0.0),             # Nose tip
+            (0.0, -330.0, -65.0),        # Chin
+            (-225.0, 170.0, -135.0),     # Left eye left corner
+            (225.0, 170.0, -135.0),      # Right eye right corner
+            (-150.0, -150.0, -125.0),    # Mouth left corner
+            (150.0, -150.0, -125.0)      # Mouth right corner
+        ]) / 4.5
+
+        self.model_points_68 = self._get_full_model_points()
+
+        # Camera internals
+        self.focal_length = self.size[1]
+        self.camera_center = (self.size[1] / 2, self.size[0] / 2)
+        self.camera_matrix = np.array(
+            [[self.focal_length, 0, self.camera_center[0]],
+             [0, self.focal_length, self.camera_center[1]],
+             [0, 0, 1]], dtype="double")
+
+        # Assuming no lens distortion
+        self.dist_coeefs = np.zeros((4, 1))
+
+        # Rotation vector and translation vector
+        self.r_vec = np.array([[0.01891013], [0.08560084], [-3.14392813]])
+        self.t_vec = np.array(
+            [[-14.97821226], [-10.62040383], [-2053.03596872]])
+        # self.r_vec = None
+        # self.t_vec = None
+
+    def _get_full_model_points(self, filename=dir_path+'/assets/model.txt'):
+        """Get all 68 3D model points from file"""
+        raw_value = []
+        with open(filename) as file:
+            for line in file:
+                raw_value.append(line)
+        model_points = np.array(raw_value, dtype=np.float32)
+        model_points = np.reshape(model_points, (3, -1)).T
+
+        # Transform the model into a front view.
+        model_points[:, 2] *= -1
+
+        return model_points
+
+    def show_3d_model(self):
+        from matplotlib import pyplot
+        from mpl_toolkits.mplot3d import Axes3D
+        fig = pyplot.figure()
+        ax = Axes3D(fig)
+
+        x = self.model_points_68[:, 0]
+        y = self.model_points_68[:, 1]
+        z = self.model_points_68[:, 2]
+
+        ax.scatter(x, y, z)
+        ax.axis('square')
+        pyplot.xlabel('x')
+        pyplot.ylabel('y')
+        pyplot.show()
+
+    def solve_pose(self, image_points):
+        """
+        Solve pose from image points
+        Return (rotation_vector, translation_vector) as pose.
+        """
+        assert image_points.shape[0] == self.model_points_68.shape[0], "3D points and 2D points should be of same number."
+        (_, rotation_vector, translation_vector) = cv2.solvePnP(
+            self.model_points, image_points, self.camera_matrix, self.dist_coeefs)
+
+        # (success, rotation_vector, translation_vector) = cv2.solvePnP(
+        #     self.model_points,
+        #     image_points,
+        #     self.camera_matrix,
+        #     self.dist_coeefs,
+        #     rvec=self.r_vec,
+        #     tvec=self.t_vec,
+        #     useExtrinsicGuess=True)
+        return (rotation_vector, translation_vector)
+
+    def solve_pose_by_68_points(self, image_points):
+        """
+        Solve pose from all the 68 image points
+        Return (rotation_vector, translation_vector) as pose.
+        """
+
+        if self.r_vec is None:
+            (_, rotation_vector, translation_vector) = cv2.solvePnP(
+                self.model_points_68, image_points, self.camera_matrix, self.dist_coeefs)
+            self.r_vec = rotation_vector
+            self.t_vec = translation_vector
+
+        (_, rotation_vector, translation_vector) = cv2.solvePnP(
+            self.model_points_68,
+            image_points,
+            self.camera_matrix,
+            self.dist_coeefs,
+            rvec=self.r_vec,
+            tvec=self.t_vec,
+            useExtrinsicGuess=True)
+
+        return (rotation_vector, translation_vector)
+
+    def draw_annotation_box(self, image, rotation_vector, translation_vector, color=(255, 255, 255), line_width=2):
+        """Draw a 3D box as annotation of pose"""
+        point_3d = []
+        rear_size = 75
+        rear_depth = 0
+        point_3d.append((-rear_size, -rear_size, rear_depth))
+        point_3d.append((-rear_size, rear_size, rear_depth))
+        point_3d.append((rear_size, rear_size, rear_depth))
+        point_3d.append((rear_size, -rear_size, rear_depth))
+        point_3d.append((-rear_size, -rear_size, rear_depth))
+
+        front_size = 100
+        front_depth = 100
+        point_3d.append((-front_size, -front_size, front_depth))
+        point_3d.append((-front_size, front_size, front_depth))
+        point_3d.append((front_size, front_size, front_depth))
+        point_3d.append((front_size, -front_size, front_depth))
+        point_3d.append((-front_size, -front_size, front_depth))
+        point_3d = np.array(point_3d, dtype=np.float).reshape(-1, 3)
+
+        # Map to 2d image points
+        (point_2d, _) = cv2.projectPoints(point_3d,
+                                          rotation_vector,
+                                          translation_vector,
+                                          self.camera_matrix,
+                                          self.dist_coeefs)
+        point_2d = np.int32(point_2d.reshape(-1, 2))
+
+        # Draw all the lines
+        cv2.polylines(image, [point_2d], True, color, line_width, cv2.LINE_AA)
+        cv2.line(image, tuple(point_2d[1]), tuple(
+            point_2d[6]), color, line_width, cv2.LINE_AA)
+        cv2.line(image, tuple(point_2d[2]), tuple(
+            point_2d[7]), color, line_width, cv2.LINE_AA)
+        cv2.line(image, tuple(point_2d[3]), tuple(
+            point_2d[8]), color, line_width, cv2.LINE_AA)
+
+    def draw_axis(self, img, R, t):
+        points = np.float32(
+            [[30, 0, 0], [0, 30, 0], [0, 0, 30], [0, 0, 0]]).reshape(-1, 3)
+
+        axisPoints, _ = cv2.projectPoints(
+            points, R, t, self.camera_matrix, self.dist_coeefs)
+
+        img = cv2.line(img, tuple(axisPoints[3].ravel()), tuple(
+            axisPoints[0].ravel()), (255, 0, 0), 3)
+        img = cv2.line(img, tuple(axisPoints[3].ravel()), tuple(
+            axisPoints[1].ravel()), (0, 255, 0), 3)
+        img = cv2.line(img, tuple(axisPoints[3].ravel()), tuple(
+            axisPoints[2].ravel()), (0, 0, 255), 3)
+
+    def draw_axes(self, img, R, t):
+        img	= cv2.drawFrameAxes(img, self.camera_matrix, self.dist_coeefs, R, t, 30)
+
+
+    def get_pose_marks(self, marks):
+        """Get marks ready for pose estimation from 68 marks"""
+        pose_marks = []
+        pose_marks.append(marks[30])    # Nose tip
+        pose_marks.append(marks[8])     # Chin
+        pose_marks.append(marks[36])    # Left eye left corner
+        pose_marks.append(marks[45])    # Right eye right corner
+        pose_marks.append(marks[48])    # Mouth left corner
+        pose_marks.append(marks[54])    # Mouth right corner
+        return pose_marks
+    
+class Stabilizer:
+    """Using Kalman filter as a point stabilizer."""
+
+    def __init__(self,
+                 state_num=4,
+                 measure_num=2,
+                 cov_process=0.0001,
+                 cov_measure=0.1):
+        """Initialization"""
+        # Currently we only support scalar and point, so check user input first.
+        assert state_num == 4 or state_num == 2, "Only scalar and point supported, Check state_num please."
+
+        # Store the parameters.
+        self.state_num = state_num
+        self.measure_num = measure_num
+
+        # The filter itself.
+        self.filter = cv2.KalmanFilter(state_num, measure_num, 0)
+
+        # Store the state.
+        self.state = np.zeros((state_num, 1), dtype=np.float32)
+
+        # Store the measurement result.
+        self.measurement = np.array((measure_num, 1), np.float32)
+
+        # Store the prediction.
+        self.prediction = np.zeros((state_num, 1), np.float32)
+
+        # Kalman parameters setup for scalar.
+        if self.measure_num == 1:
+            self.filter.transitionMatrix = np.array([[1, 1],
+                                                     [0, 1]], np.float32)
+
+            self.filter.measurementMatrix = np.array([[1, 1]], np.float32)
+
+            self.filter.processNoiseCov = np.array([[1, 0],
+                                                    [0, 1]], np.float32) * cov_process
+
+            self.filter.measurementNoiseCov = np.array(
+                [[1]], np.float32) * cov_measure
+
+        # Kalman parameters setup for point.
+        if self.measure_num == 2:
+            self.filter.transitionMatrix = np.array([[1, 0, 1, 0],
+                                                     [0, 1, 0, 1],
+                                                     [0, 0, 1, 0],
+                                                     [0, 0, 0, 1]], np.float32)
+
+            self.filter.measurementMatrix = np.array([[1, 0, 0, 0],
+                                                      [0, 1, 0, 0]], np.float32)
+
+            self.filter.processNoiseCov = np.array([[1, 0, 0, 0],
+                                                    [0, 1, 0, 0],
+                                                    [0, 0, 1, 0],
+                                                    [0, 0, 0, 1]], np.float32) * cov_process
+
+            self.filter.measurementNoiseCov = np.array([[1, 0],
+                                                        [0, 1]], np.float32) * cov_measure
+
+    def update(self, measurement):
+        """Update the filter"""
+        # Make kalman prediction
+        self.prediction = self.filter.predict()
+
+        # Get new measurement
+        if self.measure_num == 1:
+            self.measurement = np.array([[np.float32(measurement[0])]])
+        else:
+            self.measurement = np.array([[np.float32(measurement[0])],
+                                         [np.float32(measurement[1])]])
+
+        # Correct according to mesurement
+        self.filter.correct(self.measurement)
+
+        # Update state value.
+        self.state = self.filter.statePost
+
+    def set_q_r(self, cov_process=0.1, cov_measure=0.001):
+        """Set new value for processNoiseCov and measurementNoiseCov."""
+        if self.measure_num == 1:
+            self.filter.processNoiseCov = np.array([[1, 0],
+                                                    [0, 1]], np.float32) * cov_process
+            self.filter.measurementNoiseCov = np.array(
+                [[1]], np.float32) * cov_measure
+        else:
+            self.filter.processNoiseCov = np.array([[1, 0, 0, 0],
+                                                    [0, 1, 0, 0],
+                                                    [0, 0, 1, 0],
+                                                    [0, 0, 0, 1]], np.float32) * cov_process
+            self.filter.measurementNoiseCov = np.array([[1, 0],
+                                                        [0, 1]], np.float32) * cov_measure
+
+class FaceDetector:
+    """Detect human face from image"""
+
+    def __init__(self,
+                 dnn_proto_text=dir_path+'/assets/deploy.prototxt',
+                 dnn_model=dir_path+'/assets/res10_300x300_ssd_iter_140000.caffemodel'):
+        """Initialization"""
+        self.face_net = cv2.dnn.readNetFromCaffe(dnn_proto_text, dnn_model)
+        self.detection_result = None
+
+    def get_faceboxes(self, image, threshold=0.5):
+        """
+        Get the bounding box of faces in image using dnn.
+        """
+        rows, cols, _ = image.shape
+
+        confidences = []
+        faceboxes = []
+
+        self.face_net.setInput(cv2.dnn.blobFromImage(
+            image, 1.0, (300, 300), (104.0, 177.0, 123.0), False, False))
+        detections = self.face_net.forward()
+
+        for result in detections[0, 0, :, :]:
+            confidence = result[2]
+            if confidence > threshold:
+                x_left_bottom = int(result[3] * cols)
+                y_left_bottom = int(result[4] * rows)
+                x_right_top = int(result[5] * cols)
+                y_right_top = int(result[6] * rows)
+                confidences.append(confidence)
+                faceboxes.append(
+                    [x_left_bottom, y_left_bottom, x_right_top, y_right_top])
+
+        self.detection_result = [faceboxes, confidences]
+
+        return confidences, faceboxes
+
+    def draw_all_result(self, image):
+        """Draw the detection result on image"""
+        for facebox, conf in self.detection_result:
+            cv2.rectangle(image, (facebox[0], facebox[1]),
+                          (facebox[2], facebox[3]), (0, 255, 0))
+            label = "face: %.4f" % conf
+            label_size, base_line = cv2.getTextSize(
+                label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1)
+
+            cv2.rectangle(image, (facebox[0], facebox[1] - label_size[1]),
+                          (facebox[0] + label_size[0],
+                           facebox[1] + base_line),
+                          (0, 255, 0), cv2.FILLED)
+            cv2.putText(image, label, (facebox[0], facebox[1]),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0))
+class MarkDetector:
+    """Facial landmark detector by Convolutional Neural Network"""
+
+    def __init__(self, saved_model=dir_path+'/assets/pose_model'):
+        """Initialization"""
+        # A face detector is required for mark detection.
+        self.face_detector = FaceDetector()
+
+        self.cnn_input_size = 128
+        self.marks = None
+
+        # Get a TensorFlow session ready to do landmark detection
+        # Load a Tensorflow saved model into memory.
+        self.graph = tf.Graph()
+        config = tf.ConfigProto()
+        config.gpu_options.allow_growth = True
+        self.sess = tf.Session(graph=self.graph, config=config)
+
+        # Restore model from the saved_model file, that is exported by
+        # TensorFlow estimator.
+        tf.saved_model.loader.load(self.sess, ["serve"], saved_model)
+
+    @staticmethod
+    def draw_box(image, boxes, box_color=(255, 255, 255)):
+        """Draw square boxes on image"""
+        for box in boxes:
+            cv2.rectangle(image,
+                          (box[0], box[1]),
+                          (box[2], box[3]), box_color, 3)
+
+    @staticmethod
+    def move_box(box, offset):
+        """Move the box to direction specified by vector offset"""
+        left_x = box[0] + offset[0]
+        top_y = box[1] + offset[1]
+        right_x = box[2] + offset[0]
+        bottom_y = box[3] + offset[1]
+        return [left_x, top_y, right_x, bottom_y]
+
+    @staticmethod
+    def get_square_box(box):
+        """Get a square box out of the given box, by expanding it."""
+        left_x = box[0]
+        top_y = box[1]
+        right_x = box[2]
+        bottom_y = box[3]
+
+        box_width = right_x - left_x
+        box_height = bottom_y - top_y
+
+        # Check if box is already a square. If not, make it a square.
+        diff = box_height - box_width
+        delta = int(abs(diff) / 2)
+
+        if diff == 0:                   # Already a square.
+            return box
+        elif diff > 0:                  # Height > width, a slim box.
+            left_x -= delta
+            right_x += delta
+            if diff % 2 == 1:
+                right_x += 1
+        else:                           # Width > height, a short box.
+            top_y -= delta
+            bottom_y += delta
+            if diff % 2 == 1:
+                bottom_y += 1
+
+        # Make sure box is always square.
+        assert ((right_x - left_x) == (bottom_y - top_y)), 'Box is not square.'
+
+        return [left_x, top_y, right_x, bottom_y]
+
+    @staticmethod
+    def box_in_image(box, image):
+        """Check if the box is in image"""
+        rows = image.shape[0]
+        cols = image.shape[1]
+        return box[0] >= 0 and box[1] >= 0 and box[2] <= cols and box[3] <= rows
+
+    def extract_cnn_facebox(self, image):
+        """Extract face area from image."""
+        _, raw_boxes = self.face_detector.get_faceboxes(
+            image=image, threshold=0.9)
+
+        for box in raw_boxes:
+            # Move box down.
+            # diff_height_width = (box[3] - box[1]) - (box[2] - box[0])
+            offset_y = int(abs((box[3] - box[1]) * 0.1))
+            box_moved = self.move_box(box, [0, offset_y])
+
+            # Make box square.
+            facebox = self.get_square_box(box_moved)
+
+            if self.box_in_image(facebox, image):
+                return facebox
+
+        return None
+
+    def detect_marks(self, image_np):
+        """Detect marks from image"""
+        # Get result tensor by its name.
+        logits_tensor = self.graph.get_tensor_by_name(
+            'layer6/final_dense:0')
+
+        # Actual detection.
+        predictions = self.sess.run(
+            logits_tensor,
+            feed_dict={'image_tensor:0': image_np})
+
+        # Convert predictions to landmarks.
+        marks = np.array(predictions).flatten()[:136]
+        marks = np.reshape(marks, (-1, 2))
+
+        return marks
+
+    @staticmethod
+    def draw_marks(image, marks, color=(255, 255, 255)):
+        """Draw mark points on image"""
+        for mark in marks:
+            cv2.circle(image, (int(mark[0]), int(
+                mark[1])), 1, color, -1, cv2.LINE_AA)
+
 
 keyboard.add_hotkey("alt + f4", lambda: None, suppress =True)
 keyboard.add_hotkey("ctrl + c", lambda: None, suppress =True)
@@ -171,7 +616,7 @@ class GUI(QMainWindow):
         
         headers = {'authorization': "Bearer "+str(self.token)}
         dataNew = {"status": True}
-        UrlPostData = 'http://34.243.127.227:3001/api/test/allow-test-student/'+self.examId
+        UrlPostData = 'http://54.154.79.104:3001/api/test/allow-test-student/'+self.examId
         response = requests.put(UrlPostData,json=dataNew,headers=headers)
         self.message = response.json()['message']
         print(self.message)
@@ -311,7 +756,7 @@ class GUI(QMainWindow):
         totalsize = os.path.getsize(filename)
         totalChucks = math.ceil(totalsize/chunksize)
         readsofar = 0
-        url = "http://34.243.127.227:3001/api/upload/video/"+self.examId
+        url = "http://54.154.79.104:3001/api/upload/video/"+self.examId
         token = self.token
         i = 0
         uniqueId = self.getUnique(totalsize)
@@ -364,7 +809,7 @@ class GUI(QMainWindow):
         totalsize = os.path.getsize(filename)
         totalChucks = math.ceil(totalsize/chunksize)
         readsofar = 0
-        url = "http://34.243.127.227:3001/api/upload/video/"+self.examId
+        url = "http://54.154.79.104:3001/api/upload/video/"+self.examId
         token = self.token
         i = 0
         uniqueId = self.getUnique(totalsize)
@@ -579,7 +1024,7 @@ class GUI(QMainWindow):
     def checkCookies(self):
         print("Internet Success...")
         
-        cookies = browser_cookie3.chrome(domain_name="34.243.127.227")
+        cookies = browser_cookie3.chrome(domain_name="54.154.79.104")
         print("Get Cookie")
         self.token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NCwiaXNzIjoiQXBwIiwiaWF0IjoxNTk3NTc1MjE2MTAzLCJleHAiOjE1OTc1Nzc4MDgxMDN9.aprubfcM0eeH1LqyhWGbmnRzpY503AX7eTce8sX0MiA' #None
         self.examId = 'dc5ab342f6a0d3e488bb5d7be33c921c'
@@ -592,7 +1037,7 @@ class GUI(QMainWindow):
                 
 
         dataNew = {"token": self.token}
-        UrlPostData = 'http://34.243.127.227:3001/api/user/me'
+        UrlPostData = 'http://54.154.79.104:3001/api/user/me'
         self.TestDurationInt = '0'
         if self.token != None and self.examId!=None:
             response = requests.post(UrlPostData,json=dataNew)
@@ -601,7 +1046,7 @@ class GUI(QMainWindow):
             
             headers = {'authorization': "Bearer "+str(self.token)}
             dataNew = {"token": self.token}
-            UrlPostData = 'http://34.243.127.227:3001/api/test/test-requirements/'+self.examId
+            UrlPostData = 'http://54.154.79.104:3001/api/test/test-requirements/'+self.examId
             response = requests.get(UrlPostData,json=dataNew,headers=headers)
             self.TestName = response.json()['test']['name']
             self.TestDuration = str(response.json()['test']['duration']) +' m'
@@ -948,7 +1393,7 @@ class ThreadCamera(QThread):
         
     def sendImage(self,files,headers):
         try:
-            response = requests.post('http://34.243.127.227:3001/api/upload/files',files = files,headers=headers,timeout = 3)
+            response = requests.post('http://54.154.79.104:3001/api/upload/files',files = files,headers=headers,timeout = 3)
             self.AllImages.append(response.json()['files'][0]['name'])
             # print(response.json()['files'][0]['name'])
         except:
@@ -959,7 +1404,7 @@ class ThreadCamera(QThread):
             headers = {'authorization': "Bearer "+str(self.token)}
             dataNew = {"faceImages":self.AllImages}
 
-            UrlPostData = 'http://34.243.127.227:3001/api/user/proctoring-images'
+            UrlPostData = 'http://54.154.79.104:3001/api/user/proctoring-images'
             response = requests.post(UrlPostData,json=dataNew,headers=headers)
             # print(response.text)
         # print(self.FinalImage)
@@ -967,15 +1412,12 @@ class ThreadCamera(QThread):
 
 
     def run(self):
-        cap = cv2.VideoCapture(0)
-        
-
+        mark_detector = MarkDetector()
         poses=['frontal','right','left','up','down']
-       
+        file=0
+        cap = cv2.VideoCapture(file)
         
         ret, sample_frame = cap.read()
-        pose_index = 0
-        count = 0
         if ret==False:
             return    
             
@@ -990,6 +1432,19 @@ class ThreadCamera(QThread):
             measure_num=1,
             cov_process=0.1,
             cov_measure=0.1) for _ in range(6)]
+        images_saved_per_pose=0
+        number_of_images = 0
+        
+        shape_predictor = dlib.shape_predictor(dir_path+"/shape_predictor_68_face_landmarks.dat")
+        face_aligner = FaceAligner(shape_predictor, desiredFaceWidth=FACE_WIDTH)
+        
+
+       
+        
+        pose_index = 0
+        count = 0  
+            
+        
         images_saved_per_pose=0
         number_of_images = 0
         
@@ -1009,9 +1464,11 @@ class ThreadCamera(QThread):
             # If frame comes from webcam, flip it so it looks like a mirror.
             frame = cv2.flip(frame, 2)
 
+            
             frame_for_cam=frame.copy()
             original_frame=frame.copy()
             frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            
             # Show the image
 
 
@@ -1036,6 +1493,7 @@ class ThreadCamera(QThread):
             # end of show image
 
             #
+            
             facebox = mark_detector.extract_cnn_facebox(frame)
         
             if facebox is not None:
@@ -1072,6 +1530,7 @@ class ThreadCamera(QThread):
                         images_saved_per_pose+=1
                         self.saveImage(poses[pose_index],images_saved_per_pose,frame)  
                         self.setBoolStateFace.emit(False)
+                        saveit = True
                     else:
                         self.setBoolStateFace.emit(True)         
                 if pose_index==1:
@@ -1079,6 +1538,7 @@ class ThreadCamera(QThread):
                         images_saved_per_pose+=1
                         self.saveImage(poses[pose_index],images_saved_per_pose,frame)
                         self.setBoolStateFace.emit(False)
+                        saveit = True
                     else:
                         self.setBoolStateFace.emit(True)  
                 if pose_index==2:
@@ -1086,6 +1546,7 @@ class ThreadCamera(QThread):
                         images_saved_per_pose+=1
                         self.saveImage(poses[pose_index],images_saved_per_pose,frame)
                         self.setBoolStateFace.emit(False)
+                        saveit = True
                     else:
                         self.setBoolStateFace.emit(True)  
                 if pose_index==3:
@@ -1093,6 +1554,7 @@ class ThreadCamera(QThread):
                         images_saved_per_pose+=1
                         self.saveImage(poses[pose_index],images_saved_per_pose,frame)
                         self.setBoolStateFace.emit(False)
+                        saveit = True
                     else:
                         self.setBoolStateFace.emit(True)  
                 if pose_index==4:
@@ -1100,6 +1562,7 @@ class ThreadCamera(QThread):
                         images_saved_per_pose+=1
                         self.saveImage(poses[pose_index],images_saved_per_pose,frame)
                         self.setBoolStateFace.emit(False)
+                        saveit = True
                     else:
                         self.setBoolStateFace.emit(True)  
                 # Show preview.

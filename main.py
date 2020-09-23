@@ -149,5 +149,25 @@
 
 # text_file.close()
 
-import os
-os.remove("data.mp4")
+import requests
+
+url = "http://54.154.79.104:3001/api/user-test-trial/processing-result"
+
+
+privateKey = '160061482862217iooi1kfb8qq1c'
+secretKey = '17iooi1kfb8qq1b'
+trial = 127
+data = [{"time":30,"error":["Left Screen "]}]
+
+payload = {"errors":data,
+            "trial": trial,
+            "secretKey": secretKey,
+            "privateKey":privateKey}
+
+headers = {
+    'content-type': "application/json"
+    }
+
+response = requests.request("POST", url, json=payload, headers=headers)
+print(response.status_code)
+print(response.text)
