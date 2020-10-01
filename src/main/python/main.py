@@ -546,6 +546,7 @@ class GUI(QMainWindow):
         self.appctxt = appctxt
         # User Session Token
         self.token = None
+        self.IdFromUploadedImages=None
         self.Username = ''
         self.IsVerified = None
         self.examId = None
@@ -670,6 +671,9 @@ class GUI(QMainWindow):
         fg.moveCenter(centerPoint)
         widget.move(fg.topLeft())
 
+    def setVideoUploadingLabelProgress(self,text):
+        self.labelUploading.setText(text)
+
     def progressBarValue(self, value):
         # HTML TEXT PERCENTAGE
         htmlText = """<p><span style=" font-size:59pt;">{VALUE}</span><span style=" font-size:58pt; vertical-align:super;">%</span></p>"""
@@ -756,7 +760,9 @@ class GUI(QMainWindow):
         totalsize = os.path.getsize(filename)
         totalChucks = math.ceil(totalsize/chunksize)
         readsofar = 0
-        url = "http://54.154.79.104:3001/api/upload/video/"+self.examId
+        self.IdFromUploadedImages = self.thCamera.IdFromUploadedImages
+        
+        url = "http://54.154.79.104:3001/api/upload/video/"+str(self.IdFromUploadedImages)+"/STUDENT"
         token = self.token
         i = 0
         uniqueId = self.getUnique(totalsize)
@@ -790,12 +796,13 @@ class GUI(QMainWindow):
                     while not isUploaded:
                         try:
                             r = requests.request('POST',url,files=files,headers=headers, verify=False)
-                            # print(r.text)
+                            print(r.text)
                             isUploaded = True
                             i+=1
                         except Exception as exc:
                             print(exc)
                     self.progressBarValue(int(percent/2))
+                    self.setVideoUploadingLabelProgress("Video "+str(int(percent))+"%")
                     print("\r{percent:3.0f}%".format(percent=percent))
                 except:
                     pass
@@ -809,7 +816,7 @@ class GUI(QMainWindow):
         totalsize = os.path.getsize(filename)
         totalChucks = math.ceil(totalsize/chunksize)
         readsofar = 0
-        url = "http://54.154.79.104:3001/api/upload/video/"+self.examId
+        url = "http://54.154.79.104:3001/api/upload/video/"+str(self.IdFromUploadedImages)+"/SCREEN"
         token = self.token
         i = 0
         uniqueId = self.getUnique(totalsize)
@@ -849,6 +856,8 @@ class GUI(QMainWindow):
                         except Exception as exc:
                             print(exc)
                     self.progressBarValue(int(percent/2+50))
+                    
+                    self.setVideoUploadingLabelProgress("Screen "+str(int(percent))+"%")
                     print("\r{percent:3.0f}%".format(percent=percent))
                 except:
                     pass
@@ -1180,12 +1189,12 @@ class GUI(QMainWindow):
         print("Start Prediction")
         # self.camera.startCap()
         self.Thread_Of_Prediction_Is_Run = True
-        th = ThreadCamera(self,self.token)
-        th.changePixmap.connect(self.setImage)
-        th.setPose.connect(self.setCameraPose)
-        th.setBoolStateFace.connect(self.setBoolImageFace)
-        th.checkingEnded.connect(self.goCheckingForPose)
-        th.start()
+        self.thCamera = ThreadCamera(self,self.token,self.examId,self.IdFromUploadedImages)
+        self.thCamera.changePixmap.connect(self.setImage)
+        self.thCamera.setPose.connect(self.setCameraPose)
+        self.thCamera.setBoolStateFace.connect(self.setBoolImageFace)
+        self.thCamera.checkingEnded.connect(self.goCheckingForPose)
+        self.thCamera.start()
 
 
 
@@ -1374,9 +1383,11 @@ class ThreadCamera(QThread):
     setBoolStateFace = pyqtSignal(bool)
     checkingEnded = pyqtSignal(str)
 
-    def __init__(self,window,token):
+    def __init__(self,window,token,examId,IdFromUploadedImages):
         super(ThreadCamera,self).__init__(window)
         self.token = token
+        self.examId = examId
+        self.IdFromUploadedImages=IdFromUploadedImages
         self.FinalImage = 5
         self.AllImages = []
 
@@ -1402,11 +1413,14 @@ class ThreadCamera(QThread):
         if self.FinalImage == 0:
             print(self.AllImages)
             headers = {'authorization': "Bearer "+str(self.token)}
-            dataNew = {"faceImages":self.AllImages}
+            dataNew = {"faceImages":self.AllImages,"TestId":self.examId}
 
             UrlPostData = 'http://54.154.79.104:3001/api/user/proctoring-images'
             response = requests.post(UrlPostData,json=dataNew,headers=headers)
+            self.IdFromUploadedImages = response.json()['userTestTrial']['id']
+            # print('---------------------------------------------')
             # print(response.text)
+            # print(self.IdFromUploadedImages)
         # print(self.FinalImage)
         # print(self.AllImages)
 
@@ -1613,17 +1627,22 @@ class ThreadCameraVideo(QThread):
         self.NameOfFileScreen = str(self.getUnique())+'.mp4'
         self.PathOfFile = tempfile.gettempdir()+"\\"+self.NameOfFile
         self.PathNameOfFileScreen = tempfile.gettempdir()+"\\"+self.NameOfFileScreen
-        fourcc = cv2.VideoWriter_fourcc(*'FMP4')
-        self.out = cv2.VideoWriter(self.PathOfFile, fourcc, 20.0, (250,250))
+        fourcc = cv2.VideoWriter_fourcc(*'H264')
+       
+        
+        self.fps = int(self.cap.get(cv2.CAP_PROP_FPS))
+        self.out = cv2.VideoWriter()
+        self.out.open(self.PathOfFile, fourcc, 20.0, (250, 250),True)
         
 
         # display screen resolution, get it from your OS settings
-        SCREEN_SIZE = (250,250) #pyautogui.size()
+        
+        SCREEN_SIZE = pyautogui.size()
         # define the codec
-        fourcc2 = cv2.VideoWriter_fourcc(*"FMP4")
+        fourcc2 = cv2.VideoWriter_fourcc(*'H264')
         # create the video write object
-        self.outScreen = cv2.VideoWriter(self.PathNameOfFileScreen, fourcc2, 20.0, SCREEN_SIZE)
-
+        self.outScreen = cv2.VideoWriter()
+        self.outScreen.open(self.PathNameOfFileScreen, fourcc2, 20.0, (250,250), True)
 
         count = 0
         while True:
