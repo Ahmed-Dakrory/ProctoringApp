@@ -24,7 +24,6 @@ import math
 
 import os
 
-import cookies as browser_cookie3
 
 ################################
 # Those for the Devices Checking
@@ -55,18 +54,36 @@ import keyboard
 CNN_INPUT_SIZE = 128
 ANGLE_THRESHOLD = 0.15
 IMAGE_PER_POSE=10
+IMAGE_PER_PIC=150
 FACE_WIDTH = 160
 
 
 
 
-try:
-    dir_path = sys.argv[1:][0] 
-except:
-    if getattr(sys, 'frozen', False):
-        dir_path = os.path.dirname(sys.executable)
-    elif __file__:
-        dir_path = os.path.dirname(__file__)
+
+# if __file__:
+#     dir_path = os.path.dirname(__file__)
+# elif getattr(sys, 'frozen', False):
+#     dir_path = os.path.dirname(sys.executable)
+# else:
+#     dir_path =os.path.dirname(os.path.realpath(__file__))
+
+if getattr(sys, 'frozen', False):
+    # If the application is run as a bundle, the PyInstaller bootloader
+    # extends the sys module by a flag frozen=True and sets the app 
+    # path into variable _MEIPASS'.
+    dir_path = sys._MEIPASS
+else:
+    dir_path = os.path.dirname(os.path.abspath(__file__))
+
+print("----------------------------------------")
+print("----------------------------------------")
+print("----------------------------------------")
+print(dir_path)
+print("----------------------------------------")
+print("----------------------------------------")
+print("----------------------------------------")
+    
 
 #folder to store face images
 CNN_INPUT_SIZE = 128
@@ -77,7 +94,8 @@ FACE_WIDTH = 160
 # pyinstaller --onefile --add-data assets/deploy.prototxt;assets --add-data assets/model.txt;assets --add-data assets/res10_300x300_ssd_iter_140000.caffemodel;assets --add-data assets/pose_model/saved_model.pb;assets/pose_model --add-data assets/pose_model/variables/variables.data-00000-of-00001;assets/pose_model/variables --add-data assets/pose_model/variables/variables.index;assets/pose_model/variables --add-data shape_predictor_68_face_landmarks.dat;. Camera_Captureall.py
 
 """Human facial landmark detector based on Convolutional Neural Network."""
-
+token = None
+examId = None
 class PoseEstimator:
     """Estimate head pose according to the facial landmarks"""
 
@@ -397,6 +415,7 @@ class FaceDetector:
                           (0, 255, 0), cv2.FILLED)
             cv2.putText(image, label, (facebox[0], facebox[1]),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0))
+
 class MarkDetector:
     """Facial landmark detector by Convolutional Neural Network"""
 
@@ -528,13 +547,8 @@ keyboard.add_hotkey("shift + f10", lambda: None, suppress =True)
 
 class GUI(QMainWindow):
     def __init__(self,appctxt):
-        try:
-            self.dir_path = sys.argv[1:][0] 
-        except:
-            if getattr(sys, 'frozen', False):
-                self.dir_path = os.path.dirname(sys.executable)
-            elif __file__:
-                self.dir_path = os.path.dirname(__file__)
+        
+        self.dir_path = dir_path
             # self.dir_path =os.path.dirname(os.path.realpath(__file__))
         # self.dir_path = sys.argv[1:][0] #os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
         super(GUI,self).__init__()
@@ -545,11 +559,14 @@ class GUI(QMainWindow):
         self.stepNow = 0
         self.appctxt = appctxt
         # User Session Token
-        self.token = None
+        self.token = token
         self.IdFromUploadedImages=None
         self.Username = ''
         self.IsVerified = None
-        self.examId = None
+        self.examId = examId
+        self.AllImagesFaces = []
+        self.AllImagesHand = []
+        self.AllImagesId = []
 
         self.oldPos = self.pos()
 
@@ -599,7 +616,7 @@ class GUI(QMainWindow):
         self.testname_label.setText(self.TestName)
         self.testduration_label.setText(str(self.TestDuration) )
         self.show()
-        self.goNextStep()
+        self.goNextStep(True)
         self.exit_code = self.appctxt.app.exec_()      # 2. Invoke appctxt.app.exec_()
         
 
@@ -760,7 +777,7 @@ class GUI(QMainWindow):
         totalsize = os.path.getsize(filename)
         totalChucks = math.ceil(totalsize/chunksize)
         readsofar = 0
-        self.IdFromUploadedImages = self.thCamera.IdFromUploadedImages
+        self.IdFromUploadedImages = self.IdFromUploadedImages
         
         url = "http://54.154.79.104:3001/api/upload/video/"+str(self.IdFromUploadedImages)+"/STUDENT"
         token = self.token
@@ -938,7 +955,7 @@ class GUI(QMainWindow):
         except:
             print("Error")
             
-    def goNextStep(self):
+    def goNextStep(self,Move):
         self.predictButton.setStyleSheet("""QPushButton{background-color: rgb(190, 188, 188);
         border-style: outset;
         border-width: 1px;
@@ -949,8 +966,8 @@ class GUI(QMainWindow):
         font-size: 15px;
         font-weight: 700;}""")
         self.predictButton.setEnabled(False)
-        
-        self.pagerWindow.setCurrentIndex(self.stepNow)
+        if Move:
+            self.pagerWindow.setCurrentIndex(self.stepNow)
         if self.stepNow == 0: # step 0
             print("Checking Internet...")
 
@@ -984,7 +1001,47 @@ class GUI(QMainWindow):
             
         elif self.stepNow == 3: # step 3
             self.predict()
-        elif self.stepNow == 4:
+        elif self.stepNow == 4: # step 3
+            if True:
+                self.predictHand()
+            else:
+                self.stepNow +=1
+                self.goNextStep(False)
+        elif self.stepNow == 5: # step 3
+            if True:
+                self.predictId()
+            else:
+                self.stepNow +=1
+                self.goNextStep(False)
+        elif self.stepNow == 6:
+            SentTheImages = True
+            while SentTheImages:
+                headers = {'authorization': "Bearer "+str(self.token)}
+                if len(self.AllImagesFaces) > 0 and len(self.AllImagesHand) > 0 and len(self.AllImagesId) > 0 :
+                    dataNew = {"faceImages":self.AllImagesFaces,
+                                "knuckleImages":self.AllImagesHand,
+                                "idImages":self.AllImagesId,"TestId":self.examId}
+                elif len(self.AllImagesFaces) > 0 and len(self.AllImagesId) > 0 :
+                    dataNew = {"faceImages":self.AllImagesFaces,
+                                "idImages":self.AllImagesId,"TestId":self.examId}
+                elif len(self.AllImagesFaces) > 0 and len(self.AllImagesHand) > 0 :
+                    dataNew = {"faceImages":self.AllImagesFaces,
+                                "knuckleImages":self.AllImagesHand,"TestId":self.examId}
+                else  :
+                    dataNew = {"faceImages":self.AllImagesFaces,"TestId":self.examId}
+                print(dataNew)
+                UrlPostData = 'http://54.154.79.104:3001/api/user/proctoring-images'
+                response = requests.post(UrlPostData,json=dataNew,headers=headers)
+                try:
+                    self.IdFromUploadedImages = response.json()['userTestTrial']['id']
+                    SentTheImages = False
+                except:
+                    print('---------------------------------------------')
+                    print(response.text)
+            
+            self.stepNow +=1
+            self.goNextStep(False)
+        elif self.stepNow == 7:
             self.predictButton.setEnabled(True)
             self.predictButton.setStyleSheet("""QPushButton{background-color: #0095ff;
             border-style: outset;
@@ -1006,10 +1063,10 @@ class GUI(QMainWindow):
             font-size: 15px;
             font-weight: 700;}""")
             self.stepNow +=1
-            # self.goNextStep()
+            # self.goNextStep(True)
             # finished all Steps then we will show a panel to show success or fails
 
-        elif self.stepNow == 5:
+        elif self.stepNow == 8:
             self.ReduceWindowAndMove()
         elif self.stepNow == -1:
             self.ReduceWindowAndMove()
@@ -1033,16 +1090,16 @@ class GUI(QMainWindow):
     def checkCookies(self):
         print("Internet Success...")
         
-        cookies = browser_cookie3.chrome(domain_name="54.154.79.104")
+        # cookies = browser_cookie3.chrome(domain_name="54.154.79.104")
         print("Get Cookie")
-        self.token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NCwiaXNzIjoiQXBwIiwiaWF0IjoxNTk3NTc1MjE2MTAzLCJleHAiOjE1OTc1Nzc4MDgxMDN9.aprubfcM0eeH1LqyhWGbmnRzpY503AX7eTce8sX0MiA' #None
-        self.examId = 'dc5ab342f6a0d3e488bb5d7be33c921c'
-        for ck in cookies:
-            if ck.name == 'token':
-                self.token = ck.value
+        self.token = token #'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NCwiaXNzIjoiQXBwIiwiaWF0IjoxNTk3NTc1MjE2MTAzLCJleHAiOjE1OTc1Nzc4MDgxMDN9.aprubfcM0eeH1LqyhWGbmnRzpY503AX7eTce8sX0MiA' #None
+        self.examId = examId #'dc5ab342f6a0d3e488bb5d7be33c921c'
+        # for ck in cookies:
+        #     if ck.name == 'token':
+        #         self.token = ck.value
 
-            if ck.name == 'test':
-                self.examId = ck.value
+        #     if ck.name == 'test':
+        #         self.examId = ck.value
                 
 
         dataNew = {"token": self.token}
@@ -1086,7 +1143,7 @@ class GUI(QMainWindow):
             QTimer.singleShot(500, loop.quit)
             loop.exec_()
             self.stepNow +=1
-            self.goNextStep()
+            self.goNextStep(True)
         else:
 
             self.goToErrorPageWebsite("Please go to the Exam From the Website")
@@ -1100,7 +1157,7 @@ class GUI(QMainWindow):
         self.show()
         self.error.hide()
         self.stepNow
-        self.goNextStep()
+        self.goNextStep(True)
 
     
 
@@ -1130,9 +1187,9 @@ class GUI(QMainWindow):
     def goNextStepSlotOutSide(self,Accept):
         if Accept:
             self.stepNow +=1
-            self.goNextStep()
+            self.goNextStep(True)
         else:
-            self.goNextStep()
+            self.goNextStep(True)
 
     
     @pyqtSlot(str)
@@ -1166,6 +1223,20 @@ class GUI(QMainWindow):
         qp.drawRoundedRect(output.rect(), 70, 70)
         qp.end()
         self.cameraHolder.setPixmap(output)
+
+    @pyqtSlot(QImage)
+    def setImageHandAndId(self, image):
+        source = QPixmap.fromImage(image)
+        output = QPixmap(source.size())
+        
+        output.fill(Qt.transparent)
+        # # create a new QPainter on the output pixmap
+        qp = QPainter(output)
+        qp.setBrush(QBrush(source))
+        qp.setPen(Qt.NoPen)
+        qp.drawRoundedRect(output.rect(), 10, 10)
+        qp.end()
+        self.cameraHolder_2.setPixmap(output)
     
 
     @pyqtSlot(bool)
@@ -1178,23 +1249,51 @@ class GUI(QMainWindow):
     @pyqtSlot(str)
     def setCameraPose(self, title):
         self.followPose.setText(title)
-        
 
     @pyqtSlot(str)
-    def goCheckingForPose(self,statues):
+    def setStringValue(self, title):
+        self.followPoseHandAndId.setText(title)
+        
+
+    @pyqtSlot(bool)
+    def goCheckingForNext(self,statues):
         self.stepNow +=1
-        self.goNextStep()
+        self.goNextStep(statues)
+
+        
 
     def predict(self):
         print("Start Prediction")
         # self.camera.startCap()
         self.Thread_Of_Prediction_Is_Run = True
-        self.thCamera = ThreadCamera(self,self.token,self.examId,self.IdFromUploadedImages)
+        self.thCamera = ThreadCamera(self,self.token,self.examId,self.AllImagesFaces)
         self.thCamera.changePixmap.connect(self.setImage)
         self.thCamera.setPose.connect(self.setCameraPose)
         self.thCamera.setBoolStateFace.connect(self.setBoolImageFace)
-        self.thCamera.checkingEnded.connect(self.goCheckingForPose)
+        self.thCamera.checkingEnded.connect(self.goCheckingForNext)
         self.thCamera.start()
+
+    def predictHand(self):
+        print("Start Prediction Hand")
+        # self.camera.startCap()
+        self.Thread_Of_PredictionHand_Is_Run = True
+        self.thCameraHand = ThreadCameraHand(self,self.token,self.examId,self.AllImagesHand)
+        self.thCameraHand.changePixmap.connect(self.setImageHandAndId)
+        self.thCameraHand.setStringData.connect(self.setStringValue)
+        self.thCameraHand.checkingEnded.connect(self.goCheckingForNext)
+        self.thCameraHand.start()
+
+    def predictId(self):
+        print("Start Prediction Id")
+        # self.camera.startCap()
+        self.Thread_Of_PredictionId_Is_Run = True
+        self.thCameraId = ThreadCameraId(self,self.token,self.examId,self.AllImagesId)
+        self.thCameraId.changePixmap.connect(self.setImageHandAndId)
+        self.thCameraId.setStringData.connect(self.setStringValue)
+        self.thCameraId.checkingEnded.connect(self.goCheckingForNext)
+        self.thCameraId.start()
+
+    
 
 
 
@@ -1381,15 +1480,14 @@ class ThreadCamera(QThread):
     changePixmap = pyqtSignal(QImage)
     setPose = pyqtSignal(str)
     setBoolStateFace = pyqtSignal(bool)
-    checkingEnded = pyqtSignal(str)
+    checkingEnded = pyqtSignal(bool)
 
-    def __init__(self,window,token,examId,IdFromUploadedImages):
+    def __init__(self,window,token,examId,AllImages):
         super(ThreadCamera,self).__init__(window)
         self.token = token
         self.examId = examId
-        self.IdFromUploadedImages=IdFromUploadedImages
         self.FinalImage = 5
-        self.AllImages = []
+        self.AllImages = AllImages
 
     def saveImage(self,direction,count,image):
         
@@ -1410,19 +1508,7 @@ class ThreadCamera(QThread):
         except:
             pass
         self.FinalImage -= 1
-        if self.FinalImage == 0:
-            print(self.AllImages)
-            headers = {'authorization': "Bearer "+str(self.token)}
-            dataNew = {"faceImages":self.AllImages,"TestId":self.examId}
-
-            UrlPostData = 'http://54.154.79.104:3001/api/user/proctoring-images'
-            response = requests.post(UrlPostData,json=dataNew,headers=headers)
-            self.IdFromUploadedImages = response.json()['userTestTrial']['id']
-            # print('---------------------------------------------')
-            # print(response.text)
-            # print(self.IdFromUploadedImages)
-        # print(self.FinalImage)
-        # print(self.AllImages)
+        
 
 
     def run(self):
@@ -1595,8 +1681,267 @@ class ThreadCamera(QThread):
                 
         cap.release()
         self.setPose.emit('click Next')
-        self.checkingEnded.emit('Success')
+        self.checkingEnded.emit(True)
+
+
+# Camera For Pose Thread
+class ThreadCameraHand(QThread):
+    changePixmap = pyqtSignal(QImage)
+    setStringData = pyqtSignal(str)
+    checkingEnded = pyqtSignal(bool)
+
+    def __init__(self,window,token,examId,AllImagesHand):
+        super(ThreadCameraHand,self).__init__(window)
+        self.token = token
+        self.examId = examId
+        self.FinalImage = 1
+        # 0  for hand
+        # 1 for id
+        self.CurrentImage = 0
+        self.AllImagesHand = AllImagesHand
+
+    def saveImage(self,direction,count,image):
+        
+        if count == IMAGE_PER_PIC:
+            # Save the image to the server with this id
+            imencoded = cv2.imencode('.jpg', image)[1]
+            fileName = str(direction)+'image.jpg'
+            files = {'files': (fileName, imencoded.tostring(), 'image/jpeg', {'Expires': '0'})}
+            headers = {'authorization': "Bearer "+str(self.token)}
+            sendThread = threading.Thread(target=self.sendImage, args=(files,headers,))
+            sendThread.start()
+        
+    def sendImage(self,files,headers):
+        try:
+            response = requests.post('http://54.154.79.104:3001/api/upload/files',files = files,headers=headers,timeout = 3)
+            self.AllImagesHand.append(response.json()['files'][0]['name'])
+            self.checkingEnded.emit(False)
+            # print(response.json()['files'][0]['name'])
+        except:
+            pass
+        
+
+    def run(self):
+        poses=['Hand']
+        cap = cv2.VideoCapture(0)
+        
+        ret, sample_frame = cap.read()
+        if ret==False:
+            return    
+            
+        # Introduce pose estimator to solve pose. Get one frame to setup the
+        # estimator according to the image size.
+        height, width = sample_frame.shape[:2]
+        
+        images_saved_per_pose=0
+        number_of_images = 0
+        
+       
+        
+        pose_index = 0
+        count = 0  
+            
+        
+        images_saved_per_pose=0
+        number_of_images = 0
+        
+        while pose_index<2:
+            saveit = False
+            # Read frame, crop it, flip it, suits your needs.
+            ret, frame = cap.read()
+            if ret is False:
+                break
+            if count % 10 !=0: # skip 10 frames
+                count+=1
+                continue
+            if images_saved_per_pose==IMAGE_PER_PIC:
+                pose_index+=1
+                images_saved_per_pose=0
+
+            # If frame comes from webcam, flip it so it looks like a mirror.
+            frame = cv2.flip(frame, 2)
+
+            
+            frame_for_cam=frame.copy()
+            original_frame=frame.copy()
+            frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            
+            # Show the image
+
+
+            # here responsible for show image
+            height, width = frame.shape[:2] 
+            # frame =frame[int(height/4):int(3/4*height),int(width/3):int(2/3*width)]
+            # frame_for_cam =frame_for_cam[int(0):int(7/8*height),int(width/5):int(4/5*width)]
+            # frame_for_cam =frame_for_cam[int(0):int(height),0:width]
+            
+            scale_percent = 59 # percent of original size
+            widthNew = int(frame_for_cam.shape[1] * scale_percent / 100)
+            heightNew = int(frame_for_cam.shape[0] * scale_percent / 100)
+            dimOld = (widthNew, heightNew)
+            frame_for_cam = cv2.resize(frame_for_cam, dimOld, interpolation = cv2.INTER_AREA)
+
+            rgbImage = cv2.cvtColor(frame_for_cam, cv2.COLOR_BGR2RGB)
+            h, w, ch = rgbImage.shape
+            bytesPerLine = ch * w
+
+            convertToQtFormat = QImage(rgbImage.data, w, h, bytesPerLine, QImage.Format_RGB888)
+            self.changePixmap.emit(convertToQtFormat)
+                
+            # end of show image
+
+            #
+            
+            if pose_index==0:
+                images_saved_per_pose+=1
+                self.CurrentImage = 0
+                self.saveImage(poses[pose_index],images_saved_per_pose,frame)
+                saveit = True
+                      
+            # Show preview.
+            if pose_index>=self.FinalImage:
+                self.setStringData.emit('Thank you')
+                break
+
+            # frame = cv2.rectangle(frame, (x1,y1), (x2,y2),(255,255,0),2)
+
+            self.setStringData.emit('Show Your '+str(poses[pose_index] +' : '+ str(images_saved_per_pose)+'/'+str(IMAGE_PER_PIC)))
+            # self.setPose.emit('Look '+str(poses[pose_index]))
+             
+                
+                
+                        
+                
+        cap.release()
+        self.setStringData.emit('Prepair Your Id')
     
+
+class ThreadCameraId(QThread):
+    changePixmap = pyqtSignal(QImage)
+    setStringData = pyqtSignal(str)
+    checkingEnded = pyqtSignal(bool)
+
+    def __init__(self,window,token,examId,AllImagesId):
+        super(ThreadCameraId,self).__init__(window)
+        self.token = token
+        self.examId = examId
+        self.FinalImage = 1
+        # 0  for hand
+        # 1 for id
+        self.CurrentImage = 0
+        self.AllImagesId = AllImagesId
+
+    def saveImage(self,direction,count,image):
+        
+        if count == IMAGE_PER_PIC:
+            # Save the image to the server with this id
+            imencoded = cv2.imencode('.jpg', image)[1]
+            fileName = str(direction)+'image.jpg'
+            files = {'files': (fileName, imencoded.tostring(), 'image/jpeg', {'Expires': '0'})}
+            headers = {'authorization': "Bearer "+str(self.token)}
+            sendThread = threading.Thread(target=self.sendImage, args=(files,headers,))
+            sendThread.start()
+        
+    def sendImage(self,files,headers):
+        try:
+            response = requests.post('http://54.154.79.104:3001/api/upload/files',files = files,headers=headers,timeout = 3)
+            self.AllImagesId.append(response.json()['files'][0]['name'])
+            self.checkingEnded.emit(False)
+            # print(response.json()['files'][0]['name'])
+        except:
+            pass
+        
+
+    def run(self):
+        poses=['ID']
+        cap = cv2.VideoCapture(0)
+        
+        ret, sample_frame = cap.read()
+        if ret==False:
+            return    
+            
+        # Introduce pose estimator to solve pose. Get one frame to setup the
+        # estimator according to the image size.
+        height, width = sample_frame.shape[:2]
+        
+        images_saved_per_pose=0
+        number_of_images = 0
+        
+       
+        
+        pose_index = 0
+        count = 0  
+            
+        
+        images_saved_per_pose=0
+        number_of_images = 0
+        
+        while pose_index<2:
+            saveit = False
+            # Read frame, crop it, flip it, suits your needs.
+            ret, frame = cap.read()
+            if ret is False:
+                break
+            if count % 10 !=0: # skip 10 frames
+                count+=1
+                continue
+            if images_saved_per_pose==IMAGE_PER_PIC:
+                pose_index+=1
+                images_saved_per_pose=0
+
+            # If frame comes from webcam, flip it so it looks like a mirror.
+            frame = cv2.flip(frame, 2)
+
+            
+            frame_for_cam=frame.copy()
+            original_frame=frame.copy()
+            frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            
+            # Show the image
+
+
+            # here responsible for show image
+            height, width = frame.shape[:2] 
+            
+            scale_percent = 59 # percent of original size
+            widthNew = int(frame_for_cam.shape[1] * scale_percent / 100)
+            heightNew = int(frame_for_cam.shape[0] * scale_percent / 100)
+            dimOld = (widthNew, heightNew)
+            frame_for_cam = cv2.resize(frame_for_cam, dimOld, interpolation = cv2.INTER_AREA)
+
+            rgbImage = cv2.cvtColor(frame_for_cam, cv2.COLOR_BGR2RGB)
+            h, w, ch = rgbImage.shape
+            bytesPerLine = ch * w
+
+            convertToQtFormat = QImage(rgbImage.data, w, h, bytesPerLine, QImage.Format_RGB888)
+            self.changePixmap.emit(convertToQtFormat)
+                
+            # end of show image
+
+            #
+            
+            if pose_index==0:
+                images_saved_per_pose+=1
+                self.CurrentImage = 0
+                self.saveImage(poses[pose_index],images_saved_per_pose,frame)
+                saveit = True
+                      
+            # Show preview.
+            if pose_index>=self.FinalImage:
+                self.setStringData.emit('Thank you')
+                break
+
+            # frame = cv2.rectangle(frame, (x1,y1), (x2,y2),(255,255,0),2)
+
+            self.setStringData.emit('Show Your '+str(poses[pose_index] +' : '+ str(images_saved_per_pose)+'/'+str(IMAGE_PER_PIC)))
+            # self.setPose.emit('Look '+str(poses[pose_index]))
+             
+                
+                
+                        
+                
+        cap.release()
+        self.setStringData.emit('click Next')
     
             
 # Main Camera for video exam
@@ -1619,10 +1964,7 @@ class ThreadCameraVideo(QThread):
 
     def run(self):
         self.cap = cv2.VideoCapture(0)
-        try:
-            dir_path = sys.argv[1:][0] 
-        except:
-            dir_path =os.path.dirname(os.path.realpath(__file__))
+        
         self.NameOfFile = str(self.getUnique())+'.mp4'
         self.NameOfFileScreen = str(self.getUnique())+'.mp4'
         self.PathOfFile = tempfile.gettempdir()+"\\"+self.NameOfFile
@@ -1728,10 +2070,7 @@ def get_reg(PATH,name):
 
 if __name__ == '__main__':
     
-    try:
-        dir_path = sys.argv[1:][0] 
-    except:
-        dir_path =os.path.dirname(os.path.realpath(__file__))
+    
 
     print("-----------------------------------------------")
     print(dir_path)
@@ -1742,10 +2081,25 @@ if __name__ == '__main__':
     # set_reg(r"Software\\Classes\\Proctoring\\",'Path', '\"C:\\Users\\AhmedDakrory\\Desktop\\ProctoringApp\\ProctoringApp\\target\\Proctoring\\"')
     # set_reg(r"Software\\Classes\\Proctoring\\Shell\\Open\\command",'', '\"'+dir_path+'\Proctoring.exe '+dir_path+'\\"')
     # set_reg(r"Software\\Classes\\Proctoring\\Shell\\Open\\command",'', '\"C:\\Users\\AhmedDakrory\\Desktop\\ProctoringApp\\ProctoringApp\\target\\Proctoring\\Proctoring.exe\"  "%C:\\Users\\AhmedDakrory\\Desktop\\ProctoringApp\\ProctoringApp\\target\\Proctoring"')
-    set_reg(r"Software\\Classes\\Proctoring\\Shell\\Open\\command",'', '\"'+dir_path+'\\Proctoring.exe\"  "%'+dir_path+'"')
+    set_reg(r"Software\\Classes\\Proctoring\\Shell\\Open\\command",'', '\"'+dir_path+'\\Proctoring.exe\"  "%0" "%1" "%2')
     
-
+    runTheApp = False
+    # token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NCwiaXNzIjoiQXBwIiwiaWF0IjoxNTk3NTc1MjE2MTAzLCJleHAiOjE1OTc1Nzc4MDgxMDN9.aprubfcM0eeH1LqyhWGbmnRzpY503AX7eTce8sX0MiA' #None
+    # examId = 'dc5ab342f6a0d3e488bb5d7be33c921c'
+    try:
+        argumentData = sys.argv[1]
+        token = argumentData.split("@/@")[1]
+        examId = argumentData.split("@/@")[2]
+        print("------------------------------------------------------------------------")
+        print(token)
+        print(examId)
+        runTheApp = True
+    except:
+        print("Error")
+        pass
     
-    appctxt = ApplicationContext()       # 1. Instantiate ApplicationContext
-    mainApp = GUI(appctxt)
-    sys.exit(mainApp.exit_code)
+    if runTheApp:
+        appctxt = ApplicationContext()       # 1. Instantiate ApplicationContext
+        mainApp = GUI(appctxt)
+        sys.exit(mainApp.exit_code)
+    

@@ -76,7 +76,7 @@ border-color: #FFF6F9;
 </string>
     </property>
     <property name="currentIndex">
-     <number>3</number>
+     <number>4</number>
     </property>
     <widget class="QWidget" name="page0">
      <widget class="QLabel" name="internetChecking">
@@ -1311,6 +1311,107 @@ qproperty-alignment: AlignCenter;
       <property name="scaledContents">
        <bool>true</bool>
       </property>
+     </widget>
+    </widget>
+    <widget class="QWidget" name="page">
+     <widget class="QGroupBox" name="groupBox_5">
+      <property name="geometry">
+       <rect>
+        <x>30</x>
+        <y>10</y>
+        <width>691</width>
+        <height>371</height>
+       </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">        border-style: outset;
+        border-width: 1px;
+        border-radius: 5px;
+        border-color: rgba(255, 255, 255, 0);
+        color: rgb(255, 243, 247);
+        font-size: 15px;
+        font-weight: 700;
+qproperty-alignment: AlignCenter;
+</string>
+      </property>
+      <property name="title">
+       <string/>
+      </property>
+      <widget class="QLabel" name="cameraHolder_2">
+       <property name="geometry">
+        <rect>
+         <x>100</x>
+         <y>0</y>
+         <width>611</width>
+         <height>351</height>
+        </rect>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">
+        border-style: outset;
+        border-width: 1px;
+        border-radius: 95px;
+        border-color: rgba(255, 255, 255, 0);
+</string>
+       </property>
+       <property name="text">
+        <string/>
+       </property>
+       <property name="scaledContents">
+        <bool>false</bool>
+       </property>
+       <property name="wordWrap">
+        <bool>false</bool>
+       </property>
+       <property name="indent">
+        <number>-1</number>
+       </property>
+      </widget>
+      <widget class="QLabel" name="CameraPortBackground_2">
+       <property name="geometry">
+        <rect>
+         <x>260</x>
+         <y>10</y>
+         <width>311</width>
+         <height>301</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string/>
+       </property>
+       <property name="pixmap">
+        <pixmap>imageface/cameraRec.png</pixmap>
+       </property>
+       <property name="scaledContents">
+        <bool>true</bool>
+       </property>
+      </widget>
+      <widget class="QLabel" name="followPoseHandAndId">
+       <property name="geometry">
+        <rect>
+         <x>270</x>
+         <y>330</y>
+         <width>281</width>
+         <height>31</height>
+        </rect>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">background-color: rgba(255, 255, 255, 2);
+        border-style: outset;
+        border-width: 1px;
+        border-radius: 5px;
+        border-color: rgba(255, 255, 255, 0);
+        padding: 4px;
+        color: rgb(255, 243, 247);
+        font-size: 15px;
+        font-weight: 700;
+qproperty-alignment: AlignCenter;
+</string>
+       </property>
+       <property name="text">
+        <string>Follow Pose</string>
+       </property>
+      </widget>
      </widget>
     </widget>
    </widget>
