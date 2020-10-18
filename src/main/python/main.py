@@ -7,6 +7,7 @@ from PyQt5.QtGui import *
 from PyQt5 import uic
 import tempfile
 
+import wave
 import datetime
 import sys
 import cv2
@@ -54,7 +55,7 @@ import keyboard
 CNN_INPUT_SIZE = 128
 ANGLE_THRESHOLD = 0.15
 IMAGE_PER_POSE=10
-IMAGE_PER_PIC=150
+IMAGE_PER_PIC=10 # here number of images for id and hand
 FACE_WIDTH = 160
 
 
@@ -762,6 +763,13 @@ class GUI(QMainWindow):
         self.th.cap.release()
         self.th.out.release()
         self.th.outScreen.release()
+        self.th.audio_thread.stop()
+        
+
+
+        cmd = dir_path+"\\ffmpeg.exe -y -ac 2 -channel_layout stereo -i "+self.th.filenameWav+" -i "+self.th.PathOfFile+" -c:v copy -c:a aac -map 0:v:0 -map 1:a:0 " +self.th.PathOfFileUploaded
+        print(cmd)
+        subprocess.call(cmd, shell=True)
         self.OpenLoaderUpload()
         
         # QCoreApplication.exit(0)
@@ -772,7 +780,7 @@ class GUI(QMainWindow):
         return int(math.floor(random.randint(33333, 999999)) + dateRand + fileSize)
 
     def upload_fileCamera(self):
-        filename = self.th.PathOfFile
+        filename = self.th.PathOfFileUploaded
         chunksize = 10000
         totalsize = os.path.getsize(filename)
         totalChucks = math.ceil(totalsize/chunksize)
@@ -919,7 +927,23 @@ class GUI(QMainWindow):
 
     def close(self):
         self.ThreadUploadingFiles = False
+        # Delete the files
+        try:
+            if os.path.exists(self.th.PathOfFile):
+                os.remove(self.th.PathOfFile)
+        
+            # if os.path.exists(self.th.PathOfFileUploaded):
+            #     os.remove(self.th.PathOfFileUploaded)
+            
+            if os.path.exists(self.th.PathNameOfFileScreen):
+                os.remove(self.th.PathNameOfFileScreen)
+
+            if os.path.exists(self.th.filenameWav):
+                os.remove(self.th.filenameWav)
+        except:
+            pass
         QCoreApplication.exit(0)
+    
 
     
     @pyqtSlot(str)
@@ -1094,6 +1118,10 @@ class GUI(QMainWindow):
         print("Get Cookie")
         self.token = token #'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NCwiaXNzIjoiQXBwIiwiaWF0IjoxNTk3NTc1MjE2MTAzLCJleHAiOjE1OTc1Nzc4MDgxMDN9.aprubfcM0eeH1LqyhWGbmnRzpY503AX7eTce8sX0MiA' #None
         self.examId = examId #'dc5ab342f6a0d3e488bb5d7be33c921c'
+        
+        print("----------------------------------")
+        print(self.token)
+        print(self.examId)
         # for ck in cookies:
         #     if ck.name == 'token':
         #         self.token = ck.value
@@ -1105,6 +1133,8 @@ class GUI(QMainWindow):
         dataNew = {"token": self.token}
         UrlPostData = 'http://54.154.79.104:3001/api/user/me'
         self.TestDurationInt = '0'
+        
+        print("----------------------------------")
         if self.token != None and self.examId!=None:
             response = requests.post(UrlPostData,json=dataNew)
             self.Username = response.json()['user']['username']
@@ -1114,6 +1144,8 @@ class GUI(QMainWindow):
             dataNew = {"token": self.token}
             UrlPostData = 'http://54.154.79.104:3001/api/test/test-requirements/'+self.examId
             response = requests.get(UrlPostData,json=dataNew,headers=headers)
+            
+            print("-----------Request--------------")
             self.TestName = response.json()['test']['name']
             self.TestDuration = str(response.json()['test']['duration']) +' m'
             self.AllNotAllowed = response.json()['testWhiteListApps']
@@ -1130,12 +1162,12 @@ class GUI(QMainWindow):
                 prog = {'deleted': False, 'SystemApp': {'serviceName': item }}
                 self.AllNotAllowed.append(prog)
 
-            # print("----------------------------------")
+            print("----------------------------------")
             # print(self.AllNotAllowed)
             self.TestDurationInt = str(response.json()['test']['duration'])
             
             self.username.setText('hi, '+self.Username)
-            # print(self.Username)
+            print(self.Username)
             self.testname_label.setText(self.TestName)
             self.testduration_label.setText((self.TestDuration) )
 
@@ -1295,7 +1327,55 @@ class GUI(QMainWindow):
 
     
 
+class AudioRecorder():
+    "Audio class based on pyAudio and Wave"
+    def __init__(self, filename="temp_audio.wav", rate=44100, fpb=1024, channels=2):
+        self.open = True
+        self.rate = rate
+        self.frames_per_buffer = fpb
+        self.channels = channels
+        self.format = pyaudio.paInt16
+        self.audio_filename = filename
+        self.audio = pyaudio.PyAudio()
+        self.stream = self.audio.open(format=self.format,
+                                      channels=self.channels,
+                                      rate=self.rate,
+                                      input=True,
+                                      frames_per_buffer = self.frames_per_buffer)
+        self.audio_frames = []
+        print("Now ----------------------")
+        print(self.audio_filename)
 
+    def record(self):
+        "Audio starts being recorded"
+        self.stream.start_stream()
+        while self.open:
+            data = self.stream.read(self.frames_per_buffer) 
+            self.audio_frames.append(data)
+            if not self.open:
+                break
+
+    def stop(self):
+        "Finishes the audio recording therefore the thread too"
+        if self.open:
+            self.open = False
+            self.stream.stop_stream()
+            self.stream.close()
+            self.audio.terminate()
+            
+            print("Now ----------------------")
+            print("Finished")
+            waveFile = wave.open(self.audio_filename, 'wb')
+            waveFile.setnchannels(self.channels)
+            waveFile.setsampwidth(self.audio.get_sample_size(self.format))
+            waveFile.setframerate(self.rate)
+            waveFile.writeframes(b''.join(self.audio_frames))
+            waveFile.close()
+
+    def start(self):
+        "Launches the audio recording function using a thread"
+        audio_thread = threading.Thread(target=self.record)
+        audio_thread.start()
 
 # Internet Connection as it handle Requests
 class ThreadInternetConnection(QThread):
@@ -1952,6 +2032,9 @@ class ThreadCameraVideo(QThread):
     changePixmap = pyqtSignal(QImage)
     changeStrLight = pyqtSignal(str)
     changeStrTime = pyqtSignal(str)
+    
+    audio_thread = None
+    
 
     
     
@@ -1968,6 +2051,7 @@ class ThreadCameraVideo(QThread):
         self.NameOfFile = str(self.getUnique())+'.mp4'
         self.NameOfFileScreen = str(self.getUnique())+'.mp4'
         self.PathOfFile = tempfile.gettempdir()+"\\"+self.NameOfFile
+        self.PathOfFileUploaded = tempfile.gettempdir()+"\\"+str(self.getUnique())+'.mp4'
         self.PathNameOfFileScreen = tempfile.gettempdir()+"\\"+self.NameOfFileScreen
         fourcc = cv2.VideoWriter_fourcc(*'H264')
        
@@ -1975,7 +2059,8 @@ class ThreadCameraVideo(QThread):
         self.fps = int(self.cap.get(cv2.CAP_PROP_FPS))
         self.out = cv2.VideoWriter()
         self.out.open(self.PathOfFile, fourcc, 20.0, (250, 250),True)
-        
+        self.filenameWav = tempfile.gettempdir()+"\\"+str(self.getUnique())+".wav"
+        self.audio_thread = AudioRecorder(filename=self.filenameWav, rate=44100, fpb=1024, channels=2)
 
         # display screen resolution, get it from your OS settings
         
@@ -1985,7 +2070,7 @@ class ThreadCameraVideo(QThread):
         # create the video write object
         self.outScreen = cv2.VideoWriter()
         self.outScreen.open(self.PathNameOfFileScreen, fourcc2, 20.0, (250,250), True)
-
+        self.audio_thread.start()
         count = 0
         while True:
             
@@ -2030,6 +2115,7 @@ class ThreadCameraVideo(QThread):
                 convertToQtFormat = QImage(rgbImage.data, w, h, bytesPerLine, QImage.Format_RGB888)
                 self.changePixmap.emit(convertToQtFormat)
 
+         
         self.cap.release()
         self.out.release()
         self.outScreen.release()
@@ -2083,9 +2169,9 @@ if __name__ == '__main__':
     # set_reg(r"Software\\Classes\\Proctoring\\Shell\\Open\\command",'', '\"C:\\Users\\AhmedDakrory\\Desktop\\ProctoringApp\\ProctoringApp\\target\\Proctoring\\Proctoring.exe\"  "%C:\\Users\\AhmedDakrory\\Desktop\\ProctoringApp\\ProctoringApp\\target\\Proctoring"')
     set_reg(r"Software\\Classes\\Proctoring\\Shell\\Open\\command",'', '\"'+dir_path+'\\Proctoring.exe\"  "%0" "%1" "%2')
     
-    runTheApp = False
-    # token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NCwiaXNzIjoiQXBwIiwiaWF0IjoxNTk3NTc1MjE2MTAzLCJleHAiOjE1OTc1Nzc4MDgxMDN9.aprubfcM0eeH1LqyhWGbmnRzpY503AX7eTce8sX0MiA' #None
-    # examId = 'dc5ab342f6a0d3e488bb5d7be33c921c'
+    runTheApp = True
+    token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NCwiaXNzIjoiQXBwIiwiaWF0IjoxNTk3NTc1MjE2MTAzLCJleHAiOjE1OTc1Nzc4MDgxMDN9.aprubfcM0eeH1LqyhWGbmnRzpY503AX7eTce8sX0MiA' #None
+    examId = 'dc5ab342f6a0d3e488bb5d7be33c921c'
     try:
         argumentData = sys.argv[1]
         token = argumentData.split("@/@")[1]
