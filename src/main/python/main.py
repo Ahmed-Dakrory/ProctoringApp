@@ -55,7 +55,7 @@ import keyboard
 CNN_INPUT_SIZE = 128
 ANGLE_THRESHOLD = 0.15
 IMAGE_PER_POSE=10
-IMAGE_PER_PIC=10 # here number of images for id and hand
+IMAGE_PER_PIC=150 # here number of images for id and hand
 FACE_WIDTH = 160
 
 
@@ -679,9 +679,14 @@ class GUI(QMainWindow):
         font-size: 15px;
         font-weight: 700;}""")
         self.LoaderUpload.predictButton.setEnabled(False)
-        self.ThreadUploadingFiles = True
-        self.uploadThread = threading.Thread(target=self.upload_fileCamera, args=())
-        self.uploadThread.start()
+
+        #########################################################
+        self.thUploadFileCamera = ThreadUploadFileCamera(self,self.th.PathOfFileUploaded,self.IdFromUploadedImages,self.token)
+        self.thUploadFileCamera.changePercentage.connect(self.progressBarValue)
+        self.thUploadFileCamera.changeLabel.connect(self.setVideoUploadingLabelProgress)
+        self.thUploadFileCamera.uploadScreen.connect(self.uploadScreenRun)
+        self.thUploadFileCamera.start()
+        
 
     def centerWidgetOnScreen(self, widget):
         centerPoint = QScreen.availableGeometry(QApplication.primaryScreen()).center()
@@ -689,9 +694,45 @@ class GUI(QMainWindow):
         fg.moveCenter(centerPoint)
         widget.move(fg.topLeft())
 
+    @pyqtSlot()
+    def afterUploadingStep(self):
+        self.LoaderUpload.predictButton.setEnabled(True)
+        self.LoaderUpload.predictButton.setStyleSheet("""QPushButton{background-color: #0095ff;
+            border-style: outset;
+            border-width: 1px;
+            border-radius: 5px;
+            border-color: #e8e8e8;
+            padding: 4px;
+            color: #fbfbfb;
+            font-size: 15px;
+            font-weight: 700;}
+            
+            QPushButton:hover{background-color: #0095ff;
+            border-style: outset;
+            border-width: 1px;
+            border-radius: 5px;
+            border-color: #e8e8e8;
+            padding: 4px;
+            color: #565050;
+            font-size: 15px;
+            font-weight: 700;}""")
+
+
+    @pyqtSlot()
+    def uploadScreenRun(self):
+        self.thUploadFileScreen = ThreadUploadFileScreen(self,self.th.PathNameOfFileScreen,self.IdFromUploadedImages,self.token)
+        self.thUploadFileScreen.changePercentage.connect(self.progressBarValue)
+        self.thUploadFileScreen.changeLabel.connect(self.setVideoUploadingLabelProgress)
+        self.thUploadFileScreen.finishUploading.connect(self.afterUploadingStep)
+        self.thUploadFileScreen.start()
+
+
+    @pyqtSlot(str)
     def setVideoUploadingLabelProgress(self,text):
         self.labelUploading.setText(text)
 
+
+    @pyqtSlot(int)
     def progressBarValue(self, value):
         # HTML TEXT PERCENTAGE
         htmlText = """<p><span style=" font-size:59pt;">{VALUE}</span><span style=" font-size:58pt; vertical-align:super;">%</span></p>"""
@@ -724,6 +765,10 @@ class GUI(QMainWindow):
 
 
     def OpenCameraApp(self):
+        self.thCloseApps = ThreadCloseApp(self)
+        self.thCloseApps.closeApp.connect(self.closeAllBlackList)
+        self.thCloseApps.start()
+
         self.hide()
         sizeObject = QDesktopWidget().screenGeometry(-1)
         self.ex = self
@@ -767,7 +812,7 @@ class GUI(QMainWindow):
         
 
 
-        cmd = dir_path+"\\ffmpeg.exe -y -ac 2 -channel_layout stereo -i "+self.th.filenameWav+" -i "+self.th.PathOfFile+" -c:v copy -c:a aac -map 0:v:0 -map 1:a:0 " +self.th.PathOfFileUploaded
+        cmd = dir_path+"\\ffmpeg.exe -y -ac 2 -channel_layout stereo -i "+self.th.PathOfFile+" -i "+self.th.filenameWav+" -c:v copy -c:a aac -map 0:v:0 -map 1:a:0 " +self.th.PathOfFileUploaded
         print(cmd)
         subprocess.call(cmd, shell=True)
         self.OpenLoaderUpload()
@@ -779,133 +824,10 @@ class GUI(QMainWindow):
         dateRand = (t-datetime.datetime(1970,1,1)).total_seconds()
         return int(math.floor(random.randint(33333, 999999)) + dateRand + fileSize)
 
-    def upload_fileCamera(self):
-        filename = self.th.PathOfFileUploaded
-        chunksize = 10000
-        totalsize = os.path.getsize(filename)
-        totalChucks = math.ceil(totalsize/chunksize)
-        readsofar = 0
-        self.IdFromUploadedImages = self.IdFromUploadedImages
-        
-        url = "http://54.154.79.104:3001/api/upload/video/"+str(self.IdFromUploadedImages)+"/STUDENT"
-        token = self.token
-        i = 0
-        uniqueId = self.getUnique(totalsize)
-        with open(filename, 'rb') as file:
-            while self.ThreadUploadingFiles:
-                try:
-                    data = file.read(chunksize)
-                    f = open(tempfile.gettempdir()+"\\"+"fileDownload", "wb")
-                    f.write(data)
-                    f.close()
-                    if not data:
-                        sys.stderr.write("\n")
-                        break
-                    readsofar += len(data)
-                    percent = readsofar * 1e2 / totalsize
-                    
-                    headers = {
-                        'Access-Control-Max-Age':'86400',
-                        'Access-Control-Allow-Methods': 'POST,OPTIONS' ,
-                        'Access-Control-Allow-Headers': 'uploader-chunk-number,uploader-chunks-total,uploader-file-id', 
-                        'Access-Control-Allow-Origin':'http://localhost:3000',
-                        'authorization': "Bearer "+token,
-                        'uploader-file-id': str(uniqueId),
-                        'uploader-chunks-total': str(totalChucks),
-                        'uploader-chunk-number': str(i)
-                        }
 
-                
-                    files = {'file': ('fileDownload',open(tempfile.gettempdir()+"\\"+"fileDownload", 'rb'),'application/octet-stream')}
-                    isUploaded = False
-                    while not isUploaded:
-                        try:
-                            r = requests.request('POST',url,files=files,headers=headers, verify=False)
-                            print(r.text)
-                            isUploaded = True
-                            i+=1
-                        except Exception as exc:
-                            print(exc)
-                    self.progressBarValue(int(percent/2))
-                    self.setVideoUploadingLabelProgress("Video "+str(int(percent))+"%")
-                    print("\r{percent:3.0f}%".format(percent=percent))
-                except:
-                    pass
-
-        self.upload_fileScreen()
        
 
-    def upload_fileScreen(self):
-        filename = self.th.PathNameOfFileScreen
-        chunksize = 10000
-        totalsize = os.path.getsize(filename)
-        totalChucks = math.ceil(totalsize/chunksize)
-        readsofar = 0
-        url = "http://54.154.79.104:3001/api/upload/video/"+str(self.IdFromUploadedImages)+"/SCREEN"
-        token = self.token
-        i = 0
-        uniqueId = self.getUnique(totalsize)
-        with open(filename, 'rb') as file:
-            while self.ThreadUploadingFiles:
-                try:
-                    data = file.read(chunksize)
-                    f = open(tempfile.gettempdir()+"\\"+"fileDownload", "wb")
-                    f.write(data)
-                    f.close()
-                    if not data:
-                        sys.stderr.write("\n")
-                        break
-                    readsofar += len(data)
-                    percent = readsofar * 1e2 / totalsize
-                    
-                    headers = {
-                        'Access-Control-Max-Age':'86400',
-                        'Access-Control-Allow-Methods': 'POST,OPTIONS' ,
-                        'Access-Control-Allow-Headers': 'uploader-chunk-number,uploader-chunks-total,uploader-file-id', 
-                        'Access-Control-Allow-Origin':'http://localhost:3000',
-                        'authorization': "Bearer "+token,
-                        'uploader-file-id': str(uniqueId),
-                        'uploader-chunks-total': str(totalChucks),
-                        'uploader-chunk-number': str(i)
-                        }
-
-                
-                    files = {'file': ("fileDownload",open(tempfile.gettempdir()+'\\'+'fileDownload', 'rb'),'application/octet-stream')}
-                    isUploaded = False
-                    while not isUploaded:
-                        try:
-                            r = requests.request('POST',url,files=files,headers=headers, verify=False)
-                            # print(r.text)
-                            isUploaded = True
-                            i+=1
-                        except Exception as exc:
-                            print(exc)
-                    self.progressBarValue(int(percent/2+50))
-                    
-                    self.setVideoUploadingLabelProgress("Screen "+str(int(percent))+"%")
-                    print("\r{percent:3.0f}%".format(percent=percent))
-                except:
-                    pass
-        self.LoaderUpload.predictButton.setEnabled(True)
-        self.LoaderUpload.predictButton.setStyleSheet("""QPushButton{background-color: #0095ff;
-            border-style: outset;
-            border-width: 1px;
-            border-radius: 5px;
-            border-color: #e8e8e8;
-            padding: 4px;
-            color: #fbfbfb;
-            font-size: 15px;
-            font-weight: 700;}
-            
-            QPushButton:hover{background-color: #0095ff;
-            border-style: outset;
-            border-width: 1px;
-            border-radius: 5px;
-            border-color: #e8e8e8;
-            padding: 4px;
-            color: #565050;
-            font-size: 15px;
-            font-weight: 700;}""")
+    
 
     def MinimizeVideo(self):
         if self.IsMinimized:
@@ -926,14 +848,17 @@ class GUI(QMainWindow):
         
 
     def close(self):
-        self.ThreadUploadingFiles = False
-        # Delete the files
         try:
+            self.thCloseApps.ThreadRunning = False
+            self.thUploadFileCamera.ThreadUploadingFiles = False
+            self.thUploadFileScreen.ThreadUploadingFiles = False
+            
+            # Delete the files
             if os.path.exists(self.th.PathOfFile):
                 os.remove(self.th.PathOfFile)
         
-            # if os.path.exists(self.th.PathOfFileUploaded):
-            #     os.remove(self.th.PathOfFileUploaded)
+            if os.path.exists(self.th.PathOfFileUploaded):
+                os.remove(self.th.PathOfFileUploaded)
             
             if os.path.exists(self.th.PathNameOfFileScreen):
                 os.remove(self.th.PathNameOfFileScreen)
@@ -962,7 +887,6 @@ class GUI(QMainWindow):
 
     @pyqtSlot()
     def goToErrorPage(self):
-        # self.app = QApplication([])
         print("Error")
         self.error = QMainWindow()
         self.error.setAttribute(Qt.WA_TranslucentBackground)
@@ -1009,7 +933,6 @@ class GUI(QMainWindow):
             QTimer.singleShot(1000, loop.quit)
             loop.exec_()
 
-            # self.checkCookies()
         elif self.stepNow == 2: # step 2
             print("Device Checking...")
             # Make a Check for All Devices Thread
@@ -1087,8 +1010,6 @@ class GUI(QMainWindow):
             font-size: 15px;
             font-weight: 700;}""")
             self.stepNow +=1
-            # self.goNextStep(True)
-            # finished all Steps then we will show a panel to show success or fails
 
         elif self.stepNow == 8:
             self.ReduceWindowAndMove()
@@ -1114,20 +1035,10 @@ class GUI(QMainWindow):
     def checkCookies(self):
         print("Internet Success...")
         
-        # cookies = browser_cookie3.chrome(domain_name="54.154.79.104")
-        print("Get Cookie")
-        self.token = token #'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NCwiaXNzIjoiQXBwIiwiaWF0IjoxNTk3NTc1MjE2MTAzLCJleHAiOjE1OTc1Nzc4MDgxMDN9.aprubfcM0eeH1LqyhWGbmnRzpY503AX7eTce8sX0MiA' #None
-        self.examId = examId #'dc5ab342f6a0d3e488bb5d7be33c921c'
         
-        print("----------------------------------")
-        print(self.token)
-        print(self.examId)
-        # for ck in cookies:
-        #     if ck.name == 'token':
-        #         self.token = ck.value
-
-        #     if ck.name == 'test':
-        #         self.examId = ck.value
+        self.token = token
+        self.examId = examId 
+        
                 
 
         dataNew = {"token": self.token}
@@ -1376,6 +1287,184 @@ class AudioRecorder():
         "Launches the audio recording function using a thread"
         audio_thread = threading.Thread(target=self.record)
         audio_thread.start()
+
+
+
+# Uploading Camera File 
+class ThreadUploadFileCamera(QThread):
+    # Create the signal
+    changePercentage = pyqtSignal(int)
+    changeLabel =pyqtSignal(str)
+    uploadScreen =pyqtSignal()
+
+    
+    def getUnique(self,fileSize):
+        t = datetime.datetime.now()
+        dateRand = (t-datetime.datetime(1970,1,1)).total_seconds()
+        return int(math.floor(random.randint(33333, 999999)) + dateRand + fileSize)
+
+    
+    def __init__(self,window,PathOfFileUploaded,IdFromUploadedImages,token):
+        super(ThreadUploadFileCamera,self).__init__(window)
+        self.filename = PathOfFileUploaded
+        self.IdFromUploadedImages = IdFromUploadedImages
+        self.ThreadUploadingFiles = True
+        self.token = token
+
+    def upload_fileCamera(self):
+        chunksize = 10000
+        totalsize = os.path.getsize(self.filename)
+        totalChucks = math.ceil(totalsize/chunksize)
+        readsofar = 0
+        self.IdFromUploadedImages = self.IdFromUploadedImages
+        
+        url = "http://54.154.79.104:3001/api/upload/video/"+str(self.IdFromUploadedImages)+"/STUDENT"
+        token = self.token
+        i = 0
+        uniqueId = self.getUnique(totalsize)
+        with open(self.filename, 'rb') as file:
+            while self.ThreadUploadingFiles:
+                try:
+                    data = file.read(chunksize)
+                    f = open(tempfile.gettempdir()+"\\"+"fileDownload", "wb")
+                    f.write(data)
+                    f.close()
+                    if not data:
+                        sys.stderr.write("\n")
+                        break
+                    readsofar += len(data)
+                    percent = readsofar * 1e2 / totalsize
+                    
+                    headers = {
+                        'Access-Control-Max-Age':'86400',
+                        'Access-Control-Allow-Methods': 'POST,OPTIONS' ,
+                        'Access-Control-Allow-Headers': 'uploader-chunk-number,uploader-chunks-total,uploader-file-id', 
+                        'Access-Control-Allow-Origin':'http://localhost:3000',
+                        'authorization': "Bearer "+token,
+                        'uploader-file-id': str(uniqueId),
+                        'uploader-chunks-total': str(totalChucks),
+                        'uploader-chunk-number': str(i)
+                        }
+
+                
+                    files = {'file': ('fileDownload',open(tempfile.gettempdir()+"\\"+"fileDownload", 'rb'),'application/octet-stream')}
+                    isUploaded = False
+                    while not isUploaded:
+                        try:
+                            r = requests.request('POST',url,files=files,headers=headers, verify=False)
+                            print(r.text)
+                            isUploaded = True
+                            i+=1
+                        except Exception as exc:
+                            print(exc)
+                    self.changePercentage.emit(int(percent/2))
+                    self.changeLabel.emit("Video "+str(int(percent))+"%")
+                    print("\r{percent:3.0f}%".format(percent=percent))
+                except:
+                    pass
+
+        self.uploadScreen.emit()
+
+    def run(self):
+        self.upload_fileCamera()
+
+
+
+# Close All Black listed Apps 
+class ThreadCloseApp(QThread):
+    # Create the signal
+    closeApp = pyqtSignal()
+
+    
+    def __init__(self,window):
+        super(ThreadCloseApp,self).__init__(window)
+        self.ThreadRunning = True
+
+
+    def run(self):
+        while self.ThreadRunning:
+            self.closeApp.emit()
+            QThread.msleep(5000)
+
+
+
+# Uploading Camera Screen 
+class ThreadUploadFileScreen(QThread):
+    # Create the signal
+    changePercentage = pyqtSignal(int)
+    changeLabel =pyqtSignal(str)
+    finishUploading =pyqtSignal()
+
+    
+    def getUnique(self,fileSize):
+        t = datetime.datetime.now()
+        dateRand = (t-datetime.datetime(1970,1,1)).total_seconds()
+        return int(math.floor(random.randint(33333, 999999)) + dateRand + fileSize)
+
+    
+    def __init__(self,window,PathOfFileUploaded,IdFromUploadedImages,token):
+        super(ThreadUploadFileScreen,self).__init__(window)
+        self.filename = PathOfFileUploaded
+        self.IdFromUploadedImages = IdFromUploadedImages
+        self.ThreadUploadingFiles = True
+        self.token = token
+
+    def upload_fileScreen(self):
+        chunksize = 10000
+        totalsize = os.path.getsize(self.filename)
+        totalChucks = math.ceil(totalsize/chunksize)
+        readsofar = 0
+        url = "http://54.154.79.104:3001/api/upload/video/"+str(self.IdFromUploadedImages)+"/SCREEN"
+        token = self.token
+        i = 0
+        uniqueId = self.getUnique(totalsize)
+        with open(self.filename, 'rb') as file:
+            while self.ThreadUploadingFiles:
+                try:
+                    data = file.read(chunksize)
+                    f = open(tempfile.gettempdir()+"\\"+"fileDownload", "wb")
+                    f.write(data)
+                    f.close()
+                    if not data:
+                        sys.stderr.write("\n")
+                        break
+                    readsofar += len(data)
+                    percent = readsofar * 1e2 / totalsize
+                    
+                    headers = {
+                        'Access-Control-Max-Age':'86400',
+                        'Access-Control-Allow-Methods': 'POST,OPTIONS' ,
+                        'Access-Control-Allow-Headers': 'uploader-chunk-number,uploader-chunks-total,uploader-file-id', 
+                        'Access-Control-Allow-Origin':'http://localhost:3000',
+                        'authorization': "Bearer "+token,
+                        'uploader-file-id': str(uniqueId),
+                        'uploader-chunks-total': str(totalChucks),
+                        'uploader-chunk-number': str(i)
+                        }
+
+                
+                    files = {'file': ("fileDownload",open(tempfile.gettempdir()+'\\'+'fileDownload', 'rb'),'application/octet-stream')}
+                    isUploaded = False
+                    while not isUploaded:
+                        try:
+                            r = requests.request('POST',url,files=files,headers=headers, verify=False)
+                            # print(r.text)
+                            isUploaded = True
+                            i+=1
+                        except Exception as exc:
+                            print(exc)
+                    self.changePercentage.emit(int(percent/2+50))
+                    
+                    self.changeLabel.emit("Screen "+str(int(percent))+"%")
+                    print("\r{percent:3.0f}%".format(percent=percent))
+                except:
+                    pass
+        self.finishUploading.emit()
+        
+
+    def run(self):
+        self.upload_fileScreen()
+
 
 # Internet Connection as it handle Requests
 class ThreadInternetConnection(QThread):
@@ -1752,7 +1841,10 @@ class ThreadCamera(QThread):
 
                 # frame = cv2.rectangle(frame, (x1,y1), (x2,y2),(255,255,0),2)
 
-            self.setPose.emit('Look '+str(poses[pose_index] +' : '+ str(images_saved_per_pose)+'/'+str(IMAGE_PER_POSE)))
+            try:
+                self.setPose.emit('Look '+str(poses[pose_index] +' : '+ str(images_saved_per_pose)+'/'+str(IMAGE_PER_POSE)))
+            except:
+                pass
             # self.setPose.emit('Look '+str(poses[pose_index]))
              
                 
