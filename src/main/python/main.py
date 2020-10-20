@@ -815,6 +815,7 @@ class GUI(QMainWindow):
         cmd = dir_path+"\\ffmpeg.exe -y -ac 2 -channel_layout stereo -i "+self.th.PathOfFile+" -i "+self.th.filenameWav+" -c:v copy -c:a aac -map 0:v:0 -map 1:a:0 " +self.th.PathOfFileUploaded
         print(cmd)
         subprocess.call(cmd, shell=True)
+        self.thCloseApps.ThreadRunning = False
         self.OpenLoaderUpload()
         
         # QCoreApplication.exit(0)
@@ -849,7 +850,6 @@ class GUI(QMainWindow):
 
     def close(self):
         try:
-            self.thCloseApps.ThreadRunning = False
             self.thUploadFileCamera.ThreadUploadingFiles = False
             self.thUploadFileScreen.ThreadUploadingFiles = False
             
@@ -884,6 +884,8 @@ class GUI(QMainWindow):
             today.replace(hour=0, minute=0, second=0, microsecond=0)
             reminingTime = (self.dateTimeEndExam - timeNow)
             self.ex.TimerNote.setText(self.strfdelta(reminingTime, "{hours}:{minutes}:{seconds}"))
+            if reminingTime <= datetime.timedelta(seconds=0):
+                self.EndTheExam()
 
     @pyqtSlot()
     def goToErrorPage(self):
@@ -2261,9 +2263,9 @@ if __name__ == '__main__':
     # set_reg(r"Software\\Classes\\Proctoring\\Shell\\Open\\command",'', '\"C:\\Users\\AhmedDakrory\\Desktop\\ProctoringApp\\ProctoringApp\\target\\Proctoring\\Proctoring.exe\"  "%C:\\Users\\AhmedDakrory\\Desktop\\ProctoringApp\\ProctoringApp\\target\\Proctoring"')
     set_reg(r"Software\\Classes\\Proctoring\\Shell\\Open\\command",'', '\"'+dir_path+'\\Proctoring.exe\"  "%0" "%1" "%2')
     
-    runTheApp = True
-    token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NCwiaXNzIjoiQXBwIiwiaWF0IjoxNTk3NTc1MjE2MTAzLCJleHAiOjE1OTc1Nzc4MDgxMDN9.aprubfcM0eeH1LqyhWGbmnRzpY503AX7eTce8sX0MiA' #None
-    examId = 'dc5ab342f6a0d3e488bb5d7be33c921c'
+    runTheApp = False
+    # token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NCwiaXNzIjoiQXBwIiwiaWF0IjoxNTk3NTc1MjE2MTAzLCJleHAiOjE1OTc1Nzc4MDgxMDN9.aprubfcM0eeH1LqyhWGbmnRzpY503AX7eTce8sX0MiA' #None
+    # examId = 'dc5ab342f6a0d3e488bb5d7be33c921c'
     try:
         argumentData = sys.argv[1]
         token = argumentData.split("@/@")[1]
