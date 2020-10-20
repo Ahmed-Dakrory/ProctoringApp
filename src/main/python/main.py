@@ -812,7 +812,7 @@ class GUI(QMainWindow):
         
 
 
-        cmd = dir_path+"\\ffmpeg.exe -y -ac 2 -channel_layout stereo -i "+self.th.PathOfFile+" -i "+self.th.filenameWav+" -c:v copy -c:a aac -map 0:v:0 -map 1:a:0 " +self.th.PathOfFileUploaded
+        cmd = '"'+dir_path+'\\ffmpeg.exe" -y -ac 2 -channel_layout stereo -i "'+self.th.PathOfFile+'" -i "'+self.th.filenameWav+'" -c:v copy -c:a aac -map 0:v:0 -map 1:a:0 "' +self.th.PathOfFileUploaded+'"'
         print(cmd)
         subprocess.call(cmd, shell=True)
         self.thCloseApps.ThreadRunning = False
