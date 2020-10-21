@@ -1050,7 +1050,7 @@ class GUI(QMainWindow):
         print("----------------------------------")
         if self.token != None and self.examId!=None:
             response = requests.post(UrlPostData,json=dataNew)
-            self.Username = response.json()['user']['username']
+            self.Username = response.json()['user']['firstName']
             self.IsVerified = response.json()['user']['active']
             
             headers = {'authorization': "Bearer "+str(self.token)}
