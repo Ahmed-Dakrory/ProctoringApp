@@ -1662,14 +1662,16 @@ class ThreadCamera(QThread):
 
     def saveImage(self,direction,count,image):
         
-        if count == IMAGE_PER_POSE:
-            # Save the image to the server with this id
-            imencoded = cv2.imencode('.jpg', image)[1]
-            fileName = str(direction)+'image.jpg'
-            files = {'files': (fileName, imencoded.tostring(), 'image/jpeg', {'Expires': '0'})}
-            headers = {'authorization': "Bearer "+str(self.token)}
-            sendThread = threading.Thread(target=self.sendImage, args=(files,headers,))
-            sendThread.start()
+        # if count == IMAGE_PER_POSE:
+        dimOld = (160, 160)
+        image = cv2.resize(image, dimOld, interpolation = cv2.INTER_AREA)
+        # Save the image to the server with this id
+        imencoded = cv2.imencode('.jpg', image)[1]
+        fileName = str(direction)+'image.jpg'
+        files = {'files': (fileName, imencoded.tostring(), 'image/jpeg', {'Expires': '0'})}
+        headers = {'authorization': "Bearer "+str(self.token)}
+        sendThread = threading.Thread(target=self.sendImage, args=(files,headers,))
+        sendThread.start()
         
     def sendImage(self,files,headers):
         try:
@@ -1777,7 +1779,7 @@ class ThreadCamera(QThread):
                 face = frame[y1: y2,x1:x2]
                 face_img = cv2.resize(face, (CNN_INPUT_SIZE, CNN_INPUT_SIZE))
                 face_img = cv2.cvtColor(face_img, cv2.COLOR_BGR2RGB)
-        
+                
                 marks = mark_detector.detect_marks([face_img])
         
                 # Convert the marks locations from local CNN to global image.
@@ -1799,7 +1801,7 @@ class ThreadCamera(QThread):
                 if pose_index==0:
                     if abs(steady_pose[0][0])<ANGLE_THRESHOLD and abs(steady_pose[0][1])<ANGLE_THRESHOLD:
                         images_saved_per_pose+=1
-                        self.saveImage(poses[pose_index],images_saved_per_pose,frame)  
+                        self.saveImage(poses[pose_index],images_saved_per_pose,face)  
                         self.setBoolStateFace.emit(False)
                         saveit = True
                     else:
@@ -1807,7 +1809,7 @@ class ThreadCamera(QThread):
                 if pose_index==1:
                     if steady_pose[0][0]>ANGLE_THRESHOLD:
                         images_saved_per_pose+=1
-                        self.saveImage(poses[pose_index],images_saved_per_pose,frame)
+                        self.saveImage(poses[pose_index],images_saved_per_pose,face)
                         self.setBoolStateFace.emit(False)
                         saveit = True
                     else:
@@ -1815,7 +1817,7 @@ class ThreadCamera(QThread):
                 if pose_index==2:
                     if steady_pose[0][0]<-ANGLE_THRESHOLD:
                         images_saved_per_pose+=1
-                        self.saveImage(poses[pose_index],images_saved_per_pose,frame)
+                        self.saveImage(poses[pose_index],images_saved_per_pose,face)
                         self.setBoolStateFace.emit(False)
                         saveit = True
                     else:
@@ -1823,7 +1825,7 @@ class ThreadCamera(QThread):
                 if pose_index==3:
                     if steady_pose[0][1]<-ANGLE_THRESHOLD:
                         images_saved_per_pose+=1
-                        self.saveImage(poses[pose_index],images_saved_per_pose,frame)
+                        self.saveImage(poses[pose_index],images_saved_per_pose,face)
                         self.setBoolStateFace.emit(False)
                         saveit = True
                     else:
@@ -1831,7 +1833,7 @@ class ThreadCamera(QThread):
                 if pose_index==4:
                     if steady_pose[0][1]>ANGLE_THRESHOLD:
                         images_saved_per_pose+=1
-                        self.saveImage(poses[pose_index],images_saved_per_pose,frame)
+                        self.saveImage(poses[pose_index],images_saved_per_pose,face)
                         self.setBoolStateFace.emit(False)
                         saveit = True
                     else:
@@ -2264,7 +2266,7 @@ if __name__ == '__main__':
     set_reg(r"Software\\Classes\\Proctoring\\Shell\\Open\\command",'', '\"'+dir_path+'\\Proctoring.exe\"  "%0" "%1" "%2')
     
     runTheApp = False
-    # token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NCwiaXNzIjoiQXBwIiwiaWF0IjoxNTk3NTc1MjE2MTAzLCJleHAiOjE1OTc1Nzc4MDgxMDN9.aprubfcM0eeH1LqyhWGbmnRzpY503AX7eTce8sX0MiA' #None
+    # token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NCwiaXNzIjoiQXBwIiwiaWF0IjoxNjAzNzgzOTQxNzkyLCJleHAiOjE2MDM3ODY1MzM3OTJ9.P-LlGQPCYEznqjUEYSjihnpMHEIDEoIotj6jGZLJ9XA' #None
     # examId = 'dc5ab342f6a0d3e488bb5d7be33c921c'
     try:
         argumentData = sys.argv[1]
