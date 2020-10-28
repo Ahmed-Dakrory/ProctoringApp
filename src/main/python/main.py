@@ -16,6 +16,7 @@ import pyautogui
 import requests
 import base64
 import random
+import json
 
 import threading
 
@@ -936,6 +937,20 @@ class GUI(QMainWindow):
             loop.exec_()
 
         elif self.stepNow == 2: # step 2
+            print("Make the analysis")
+
+            makemodelUrl = 'http://3.249.33.71:8083/makeModelForFaces'
+            payload = json.dumps({"token": self.token,
+                                "secretKey": "17iooi1kfb8qq1b",
+                                "privateKey":"160061482862217iooi1kfb8qq1c"})
+            headers = {
+                'content-type': "application/json",
+                'cache-control': "no-cache"
+                }
+
+            response = requests.request("POST", makemodelUrl, data=payload, headers=headers)
+            print(response.text)
+            
             print("Device Checking...")
             # Make a Check for All Devices Thread
             
