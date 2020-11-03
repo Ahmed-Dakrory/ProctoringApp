@@ -858,8 +858,8 @@ class GUI(QMainWindow):
             if os.path.exists(self.th.PathOfFile):
                 os.remove(self.th.PathOfFile)
         
-            if os.path.exists(self.th.PathOfFileUploaded):
-                os.remove(self.th.PathOfFileUploaded)
+            # if os.path.exists(self.th.PathOfFileUploaded):
+            #     os.remove(self.th.PathOfFileUploaded)
             
             if os.path.exists(self.th.PathNameOfFileScreen):
                 os.remove(self.th.PathNameOfFileScreen)
@@ -938,19 +938,20 @@ class GUI(QMainWindow):
 
         elif self.stepNow == 2: # step 2
             print("Make the analysis")
+            try:
+                makemodelUrl = 'http://3.249.33.71:8083/makeModelForFaces'
+                payload = json.dumps({"token": self.token,
+                                    "secretKey": "17iooi1kfb8qq1b",
+                                    "privateKey":"160061482862217iooi1kfb8qq1c"})
+                headers = {
+                    'content-type': "application/json",
+                    'cache-control': "no-cache"
+                    }
 
-            makemodelUrl = 'http://3.249.33.71:8083/makeModelForFaces'
-            payload = json.dumps({"token": self.token,
-                                "secretKey": "17iooi1kfb8qq1b",
-                                "privateKey":"160061482862217iooi1kfb8qq1c"})
-            headers = {
-                'content-type': "application/json",
-                'cache-control': "no-cache"
-                }
-
-            response = requests.request("POST", makemodelUrl, data=payload, headers=headers)
-            print(response.text)
-            
+                response = requests.request("POST", makemodelUrl, data=payload, headers=headers,timeout=1)
+                print(response.text)
+            except:
+                pass
             print("Device Checking...")
             # Make a Check for All Devices Thread
             
@@ -2169,7 +2170,7 @@ class ThreadCameraVideo(QThread):
         
         self.fps = int(self.cap.get(cv2.CAP_PROP_FPS))
         self.out = cv2.VideoWriter()
-        self.out.open(self.PathOfFile, fourcc, 20.0, (250, 250),True)
+        self.out.open(self.PathOfFile, fourcc,  19.5, (250, 250),True)
         self.filenameWav = tempfile.gettempdir()+"\\"+str(self.getUnique())+".wav"
         self.audio_thread = AudioRecorder(filename=self.filenameWav, rate=44100, fpb=1024, channels=2)
 
@@ -2180,7 +2181,7 @@ class ThreadCameraVideo(QThread):
         fourcc2 = cv2.VideoWriter_fourcc(*'H264')
         # create the video write object
         self.outScreen = cv2.VideoWriter()
-        self.outScreen.open(self.PathNameOfFileScreen, fourcc2, 20.0, (250,250), True)
+        self.outScreen.open(self.PathNameOfFileScreen, fourcc2, 19.5, (250,250), True)
         self.audio_thread.start()
         count = 0
         while True:
