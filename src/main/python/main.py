@@ -636,7 +636,7 @@ class GUI(QMainWindow):
         
         headers = {'authorization': "Bearer "+str(self.token)}
         dataNew = {"status": True}
-        UrlPostData = 'http://54.154.79.104:3001/api/test/allow-test-student/'+self.examId
+        UrlPostData = 'http://34.245.70.4:3001/api/test/allow-test-student/'+self.examId
         response = requests.put(UrlPostData,json=dataNew,headers=headers)
         self.message = response.json()['message']
         print(self.message)
@@ -858,8 +858,8 @@ class GUI(QMainWindow):
             if os.path.exists(self.th.PathOfFile):
                 os.remove(self.th.PathOfFile)
         
-            # if os.path.exists(self.th.PathOfFileUploaded):
-            #     os.remove(self.th.PathOfFileUploaded)
+            if os.path.exists(self.th.PathOfFileUploaded):
+                os.remove(self.th.PathOfFileUploaded)
             
             if os.path.exists(self.th.PathNameOfFileScreen):
                 os.remove(self.th.PathNameOfFileScreen)
@@ -939,7 +939,7 @@ class GUI(QMainWindow):
         elif self.stepNow == 2: # step 2
             print("Make the analysis")
             try:
-                makemodelUrl = 'http://3.249.33.71:8083/makeModelForFaces'
+                makemodelUrl = 'http://54.74.171.130:8083/makeModelForFaces'
                 payload = json.dumps({"token": self.token,
                                     "secretKey": "17iooi1kfb8qq1b",
                                     "privateKey":"160061482862217iooi1kfb8qq1c"})
@@ -995,7 +995,7 @@ class GUI(QMainWindow):
                 else  :
                     dataNew = {"faceImages":self.AllImagesFaces,"TestId":self.examId}
                 print(dataNew)
-                UrlPostData = 'http://54.154.79.104:3001/api/user/proctoring-images'
+                UrlPostData = 'http://34.245.70.4:3001/api/user/proctoring-images'
                 response = requests.post(UrlPostData,json=dataNew,headers=headers)
                 try:
                     self.IdFromUploadedImages = response.json()['userTestTrial']['id']
@@ -1060,7 +1060,7 @@ class GUI(QMainWindow):
                 
 
         dataNew = {"token": self.token}
-        UrlPostData = 'http://54.154.79.104:3001/api/user/me'
+        UrlPostData = 'http://34.245.70.4:3001/api/user/me'
         self.TestDurationInt = '0'
         
         print("----------------------------------")
@@ -1071,7 +1071,7 @@ class GUI(QMainWindow):
             
             headers = {'authorization': "Bearer "+str(self.token)}
             dataNew = {"token": self.token}
-            UrlPostData = 'http://54.154.79.104:3001/api/test/test-requirements/'+self.examId
+            UrlPostData = 'http://34.245.70.4:3001/api/test/test-requirements/'+self.examId
             response = requests.get(UrlPostData,json=dataNew,headers=headers)
             
             print("-----------Request--------------")
@@ -1336,7 +1336,7 @@ class ThreadUploadFileCamera(QThread):
         readsofar = 0
         self.IdFromUploadedImages = self.IdFromUploadedImages
         
-        url = "http://54.154.79.104:3001/api/upload/video/"+str(self.IdFromUploadedImages)+"/STUDENT"
+        url = "http://34.245.70.4:3001/api/upload/video/"+str(self.IdFromUploadedImages)+"/STUDENT"
         token = self.token
         i = 0
         uniqueId = self.getUnique(totalsize)
@@ -1432,7 +1432,7 @@ class ThreadUploadFileScreen(QThread):
         totalsize = os.path.getsize(self.filename)
         totalChucks = math.ceil(totalsize/chunksize)
         readsofar = 0
-        url = "http://54.154.79.104:3001/api/upload/video/"+str(self.IdFromUploadedImages)+"/SCREEN"
+        url = "http://34.245.70.4:3001/api/upload/video/"+str(self.IdFromUploadedImages)+"/SCREEN"
         token = self.token
         i = 0
         uniqueId = self.getUnique(totalsize)
@@ -1691,7 +1691,7 @@ class ThreadCamera(QThread):
         
     def sendImage(self,files,headers):
         try:
-            response = requests.post('http://54.154.79.104:3001/api/upload/files',files = files,headers=headers,timeout = 3)
+            response = requests.post('http://34.245.70.4:3001/api/upload/files',files = files,headers=headers,timeout = 3)
             self.AllImages.append(response.json()['files'][0]['name'])
             # print(response.json()['files'][0]['name'])
         except:
@@ -1905,7 +1905,7 @@ class ThreadCameraHand(QThread):
         
     def sendImage(self,files,headers):
         try:
-            response = requests.post('http://54.154.79.104:3001/api/upload/files',files = files,headers=headers,timeout = 3)
+            response = requests.post('http://34.245.70.4:3001/api/upload/files',files = files,headers=headers,timeout = 3)
             self.AllImagesHand.append(response.json()['files'][0]['name'])
             self.checkingEnded.emit(False)
             # print(response.json()['files'][0]['name'])
@@ -2036,7 +2036,7 @@ class ThreadCameraId(QThread):
         
     def sendImage(self,files,headers):
         try:
-            response = requests.post('http://54.154.79.104:3001/api/upload/files',files = files,headers=headers,timeout = 3)
+            response = requests.post('http://34.245.70.4:3001/api/upload/files',files = files,headers=headers,timeout = 3)
             self.AllImagesId.append(response.json()['files'][0]['name'])
             self.checkingEnded.emit(False)
             # print(response.json()['files'][0]['name'])
@@ -2282,7 +2282,7 @@ if __name__ == '__main__':
     set_reg(r"Software\\Classes\\Proctoring\\Shell\\Open\\command",'', '\"'+dir_path+'\\Proctoring.exe\"  "%0" "%1" "%2')
     
     runTheApp = False
-    # token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NCwiaXNzIjoiQXBwIiwiaWF0IjoxNjAzNzgzOTQxNzkyLCJleHAiOjE2MDM3ODY1MzM3OTJ9.P-LlGQPCYEznqjUEYSjihnpMHEIDEoIotj6jGZLJ9XA' #None
+    # token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NCwiaXNzIjoiQXBwIiwiaWF0IjoxNjA0NTE0NDUyODUzLCJleHAiOjE2MDQ1MTcwNDQ4NTN9._RWMR0eEkecD8HqEjaDAdWLVNpUq2avg1iG6wu9-yis' #None
     # examId = 'dc5ab342f6a0d3e488bb5d7be33c921c'
     try:
         argumentData = sys.argv[1]
