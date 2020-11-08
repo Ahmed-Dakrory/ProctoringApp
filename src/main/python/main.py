@@ -811,9 +811,18 @@ class GUI(QMainWindow):
         self.th.outScreen.release()
         self.th.audio_thread.stop()
         
+        audioCommand = subprocess.Popen('"'+dir_path+'\\ffprobe" -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "'+self.th.filenameWav+'"', shell=False, stdout=subprocess.PIPE)
+        subprocess_return = audioCommand.stdout.read()
 
+        timeOfAudio = str(subprocess_return)[2:len(str(subprocess_return))-5]
 
-        cmd = '"'+dir_path+'\\ffmpeg.exe" -y -ac 2 -channel_layout stereo -i "'+self.th.PathOfFile+'" -i "'+self.th.filenameWav+'" -c:v copy -c:a aac -map 0:v:0 -map 1:a:0 "' +self.th.PathOfFileUploaded+'"'
+        videoCommand = subprocess.Popen('"'+dir_path+'\\ffprobe" -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "'+self.th.PathOfFile+'"', shell=False, stdout=subprocess.PIPE)
+        subprocess_return = videoCommand.stdout.read()
+
+        timeOfVideo = str(subprocess_return)[2:len(str(subprocess_return))-5]
+
+        cmd = '"'+dir_path+'\\ffmpeg.exe" -y -i "'+self.th.PathOfFile+'" -i "'+self.th.filenameWav+'" -filter_complex "[0:v]setpts=PTS*0.99*'+timeOfAudio+'/'+timeOfVideo+'[v]" -map "[v]" -map 1:a -shortest -vcodec libvpx-vp9 "' +self.th.PathOfFileUploaded+'"'
+        # cmd = '"'+dir_path+'\\ffmpeg.exe" -y -ac 2 -channel_layout stereo -i "'+self.th.PathOfFile+'" -i "'+self.th.filenameWav+'" -c:v copy -c:a aac -map 0:v:0 -map 1:a:0 "' +self.th.PathOfFileUploaded+'"'
         print(cmd)
         subprocess.call(cmd, shell=True)
         self.thCloseApps.ThreadRunning = False
@@ -2170,7 +2179,7 @@ class ThreadCameraVideo(QThread):
         
         self.fps = int(self.cap.get(cv2.CAP_PROP_FPS))
         self.out = cv2.VideoWriter()
-        self.out.open(self.PathOfFile, fourcc,  19.5, (250, 250),True)
+        self.out.open(self.PathOfFile, fourcc,  25, (250, 250),True)
         self.filenameWav = tempfile.gettempdir()+"\\"+str(self.getUnique())+".wav"
         self.audio_thread = AudioRecorder(filename=self.filenameWav, rate=44100, fpb=1024, channels=2)
 
@@ -2181,7 +2190,7 @@ class ThreadCameraVideo(QThread):
         fourcc2 = cv2.VideoWriter_fourcc(*'H264')
         # create the video write object
         self.outScreen = cv2.VideoWriter()
-        self.outScreen.open(self.PathNameOfFileScreen, fourcc2, 19.5, (250,250), True)
+        self.outScreen.open(self.PathNameOfFileScreen, fourcc2, 25, (250,250), True)
         self.audio_thread.start()
         count = 0
         while True:
