@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>703</width>
-    <height>194</height>
+    <width>446</width>
+    <height>291</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -27,8 +27,8 @@
    <widget class="QPushButton" name="okError">
     <property name="geometry">
      <rect>
-      <x>560</x>
-      <y>140</y>
+      <x>260</x>
+      <y>240</y>
       <width>121</width>
       <height>41</height>
      </rect>
@@ -58,28 +58,11 @@
      <string>Ok</string>
     </property>
    </widget>
-   <widget class="QLabel" name="errorLabel">
-    <property name="geometry">
-     <rect>
-      <x>20</x>
-      <y>30</y>
-      <width>671</width>
-      <height>81</height>
-     </rect>
-    </property>
-    <property name="styleSheet">
-     <string notr="true">font: 75 26pt &quot;MS Shell Dlg 2&quot;;
-color: rgb(255, 255, 255);</string>
-    </property>
-    <property name="text">
-     <string>Error</string>
-    </property>
-   </widget>
    <widget class="QPushButton" name="close">
     <property name="geometry">
      <rect>
-      <x>340</x>
-      <y>140</y>
+      <x>110</x>
+      <y>240</y>
       <width>121</width>
       <height>41</height>
      </rect>
@@ -107,6 +90,50 @@ color: rgb(255, 255, 255);</string>
     </property>
     <property name="text">
      <string>Close</string>
+    </property>
+   </widget>
+   <widget class="QListWidget" name="listWidget">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>60</y>
+      <width>401</width>
+      <height>151</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>16</pointsize>
+     </font>
+    </property>
+    <property name="spacing">
+     <number>2</number>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>10</y>
+      <width>411</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>Palatino Linotype</family>
+      <pointsize>14</pointsize>
+      <weight>50</weight>
+      <italic>false</italic>
+      <bold>false</bold>
+     </font>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">font: 14pt &quot;Palatino Linotype&quot;;
+color: rgb(255, 255, 255);</string>
+    </property>
+    <property name="text">
+     <string>Proctoring Will Close those Apps are you agree?</string>
     </property>
    </widget>
   </widget>

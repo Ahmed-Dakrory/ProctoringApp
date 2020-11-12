@@ -19,6 +19,7 @@ import random
 import json
 
 import threading
+import time
 
 from winreg import *
 import psutil
@@ -610,6 +611,7 @@ class GUI(QMainWindow):
 
         self.predictButton.clicked.connect(self.goNextStep)
         self.exitButton.clicked.connect(self.close)
+        self.repeatButton.clicked.connect(self.reloadHandOrIdCap)
         # self.minimizeButton.clicked.connect(lambda: self.ReduceWindowAndMove())
         self.minimizeButton.clicked.connect(lambda: self.showMinimized())
         
@@ -810,6 +812,10 @@ class GUI(QMainWindow):
         self.th.out.release()
         self.th.outScreen.release()
         self.th.audio_thread.stop()
+
+        elapsed_time = time.time() - self.th.start_time
+        frame_counts = self.th.frame_counts
+        recorded_fps = frame_counts / elapsed_time
         
         audioCommand = subprocess.Popen('"'+dir_path+'\\ffprobe" -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "'+self.th.filenameWav+'"', shell=False, stdout=subprocess.PIPE)
         subprocess_return = audioCommand.stdout.read()
@@ -821,10 +827,22 @@ class GUI(QMainWindow):
 
         timeOfVideo = str(subprocess_return)[2:len(str(subprocess_return))-5]
 
-        cmd = '"'+dir_path+'\\ffmpeg.exe" -y -i "'+self.th.PathOfFile+'" -i "'+self.th.filenameWav+'" -filter_complex "[0:v]setpts=PTS*0.99*'+timeOfAudio+'/'+timeOfVideo+'[v]" -map "[v]" -map 1:a -shortest -vcodec libvpx-vp9 "' +self.th.PathOfFileUploaded+'"'
+        
+        timescale = float(15)/float(recorded_fps)
+        # timescale = float(timeOfAudio)/float(timeOfVideo)
+        # cmd = '"'+dir_path+'\\ffmpeg.exe" -y -i "'+self.th.PathOfFile+'" -i "'+self.th.filenameWav+'" -filter_complex "[0:v]setpts=PTS*0.99*'+timeOfAudio+'/'+timeOfVideo+'[v]" -map "[v]" -map 1:a -shortest -vcodec libvpx-vp9 "' +self.th.PathOfFileUploaded+'"'
         # cmd = '"'+dir_path+'\\ffmpeg.exe" -y -ac 2 -channel_layout stereo -i "'+self.th.PathOfFile+'" -i "'+self.th.filenameWav+'" -c:v copy -c:a aac -map 0:v:0 -map 1:a:0 "' +self.th.PathOfFileUploaded+'"'
-        print(cmd)
+        # subprocess.call(cmd, shell=True)
+        cmd = '"'+dir_path+'\\ffmpeg.exe" -itsscale '+str(timescale)+' -i "'+self.th.PathOfFile+'" -codec copy temp_video.mp4'
         subprocess.call(cmd, shell=True)
+
+        print("Muxing")
+        cmd = '"'+dir_path+'\\ffmpeg.exe" -y -ac 2 -channel_layout stereo -i temp_video.mp4 -i "'+self.th.filenameWav+'" -c:v copy -c:a aac -map 0:v:0 -map 1:a:0 "' +self.th.PathOfFileUploaded+'"'
+        subprocess.call(cmd, shell=True)
+
+        if os.path.exists("temp_video.mp4"):
+            os.remove("temp_video.mp4")
+
         self.thCloseApps.ThreadRunning = False
         self.OpenLoaderUpload()
         
@@ -907,6 +925,7 @@ class GUI(QMainWindow):
         
         self.error.setWindowFlags(Qt.WindowStaysOnTopHint | Qt.FramelessWindowHint)
         self.error.okError.clicked.connect(self.restart)
+        self.error.close.clicked.connect(self.close)
         
         
         try:
@@ -927,6 +946,7 @@ class GUI(QMainWindow):
         font-weight: 700;}""")
         self.predictButton.setEnabled(False)
         if Move:
+            #Move if the index indicated
             self.pagerWindow.setCurrentIndex(self.stepNow)
         if self.stepNow == 0: # step 0
             print("Checking Internet...")
@@ -966,8 +986,7 @@ class GUI(QMainWindow):
             
             self.checkDevicesThread = ThreadDeviceCheckConnection(self)
             self.checkDevicesThread.ShowErrorPanel.connect(self.goToErrorPageWebsite)
-            self.checkDevicesThread.GoNextStep.connect(self.goNextStepSlotOutSide)
-            self.checkDevicesThread.HandleBlackList.connect(self.closeAllBlackList)
+            self.checkDevicesThread.openListOfClosingApp.connect(self.openClosingAppMenu)
             self.checkDevicesThread.start()
 
 
@@ -977,12 +996,16 @@ class GUI(QMainWindow):
             self.predict()
         elif self.stepNow == 4: # step 3
             if True:
+                self.pagerWindow.setCurrentIndex(self.stepNow)
+                self.repeatButton.setVisible(False)
                 self.predictHand()
             else:
                 self.stepNow +=1
                 self.goNextStep(False)
         elif self.stepNow == 5: # step 3
             if True:
+                self.pagerWindow.setCurrentIndex(self.stepNow)
+                self.repeatButton.setVisible(False)
                 self.predictId()
             else:
                 self.stepNow +=1
@@ -1037,6 +1060,7 @@ class GUI(QMainWindow):
             font-size: 15px;
             font-weight: 700;}""")
             self.stepNow +=1
+            self.goNextStep(False)
 
         elif self.stepNow == 8:
             self.ReduceWindowAndMove()
@@ -1126,7 +1150,7 @@ class GUI(QMainWindow):
     def restart(self):
         self.show()
         self.error.hide()
-        self.stepNow
+        self.stepNow -=1
         self.goNextStep(True)
 
     
@@ -1148,8 +1172,8 @@ class GUI(QMainWindow):
             if not isExist:
                 try:
                     proc.kill()
-                    print("--------------------------------")
-                    print("Kill "+proc.name())
+                    # print("--------------------------------")
+                    # print("Kill "+proc.name())
                 except:
                     pass
 
@@ -1161,7 +1185,43 @@ class GUI(QMainWindow):
         else:
             self.goNextStep(True)
 
-    
+    @pyqtSlot(str)
+    def openClosingAppMenu(self,listString):
+        self.hide()
+        self.listOfClosingApps = QMainWindow()
+        self.listOfClosingApps.setAttribute(Qt.WA_TranslucentBackground)
+        uic.loadUi(self.dir_path+'\listOfClosingApps.ui', self.listOfClosingApps) # Load the .ui file
+        
+        
+        self.listOfClosingApps.setWindowFlags(Qt.WindowStaysOnTopHint | Qt.FramelessWindowHint)
+        self.listOfClosingApps.okError.clicked.connect(self.closeAppsAndContinue)
+        self.listOfClosingApps.close.clicked.connect(self.close)
+        
+
+        for proc in psutil.process_iter():
+            # check whether the process name matches
+            isExist = False
+            for program in self.AllNotAllowed:
+                if proc.name() == program['SystemApp']['serviceName']:
+                    isExist = True
+
+            if not isExist:
+                try:
+                    i = QListWidgetItem(proc.name())
+                    i.setBackground(QColor('#beaed4'))
+                    self.listOfClosingApps.listWidget.addItem(i)
+                except:
+                    pass
+        self.listOfClosingApps.show()
+
+    def closeAppsAndContinue(self):
+        self.show()
+        self.listOfClosingApps.hide()
+        self.closeAllBlackList()
+        self.stepNow +=1
+        self.goNextStep(True)
+        
+
     @pyqtSlot(str)
     def goToErrorPageWebsite(self,statment):
         self.hide()
@@ -1172,6 +1232,7 @@ class GUI(QMainWindow):
         
         self.error.setWindowFlags(Qt.WindowStaysOnTopHint | Qt.FramelessWindowHint)
         self.error.okError.clicked.connect(self.restart)
+        self.error.close.clicked.connect(self.close)
         self.error.show()
 
     @pyqtSlot(QImage)
@@ -1227,9 +1288,57 @@ class GUI(QMainWindow):
 
     @pyqtSlot(bool)
     def goCheckingForNext(self,statues):
+        # self.stepNow +=1
+        # self.goNextStep(statues)
+        self.predictButton.setEnabled(True)
+        self.predictButton.setStyleSheet("""QPushButton{background-color: #0095ff;
+        border-style: outset;
+        border-width: 1px;
+        border-radius: 5px;
+        border-color: #e8e8e8;
+        padding: 4px;
+        color: #fbfbfb;
+        font-size: 15px;
+        font-weight: 700;}
+        
+        QPushButton:hover{background-color: #0095ff;
+        border-style: outset;
+        border-width: 1px;
+        border-radius: 5px;
+        border-color: #e8e8e8;
+        padding: 4px;
+        color: #565050;
+        font-size: 15px;
+        font-weight: 700;}""")
         self.stepNow +=1
-        self.goNextStep(statues)
+        print("now   ",self.stepNow)
 
+    @pyqtSlot(int)
+    def showReloadButtonandSetAction(self, typeOfAction):
+        
+        print(self.stepNow)
+        if typeOfAction == 0:
+            # Action for Hand
+            self.repeatButton.setVisible(True)
+            
+            
+        elif typeOfAction == 1:
+            # Action for Id
+            self.repeatButton.setVisible(True)
+
+
+    def reloadHandOrIdCap(self):
+        
+        if self.stepNow == 5:
+            self.stepNow -= 1
+            self.repeatButton.setVisible(False)
+            self.AllImagesHand = []
+            self.predictHand()
+        elif self.stepNow == 6:
+            self.stepNow -= 1
+            self.repeatButton.setVisible(False)
+            self.AllImagesId = []
+            self.predictId()
         
 
     def predict(self):
@@ -1251,6 +1360,7 @@ class GUI(QMainWindow):
         self.thCameraHand.changePixmap.connect(self.setImageHandAndId)
         self.thCameraHand.setStringData.connect(self.setStringValue)
         self.thCameraHand.checkingEnded.connect(self.goCheckingForNext)
+        self.thCameraHand.reloadCameraShow.connect(self.showReloadButtonandSetAction)
         self.thCameraHand.start()
 
     def predictId(self):
@@ -1261,6 +1371,7 @@ class GUI(QMainWindow):
         self.thCameraId.changePixmap.connect(self.setImageHandAndId)
         self.thCameraId.setStringData.connect(self.setStringValue)
         self.thCameraId.checkingEnded.connect(self.goCheckingForNext)
+        self.thCameraId.reloadCameraShow.connect(self.showReloadButtonandSetAction)
         self.thCameraId.start()
 
     
@@ -1281,7 +1392,6 @@ class AudioRecorder():
                                       input=True,
                                       frames_per_buffer = self.frames_per_buffer)
         self.audio_frames = []
-        print("Now ----------------------")
         print(self.audio_filename)
 
     def record(self):
@@ -1301,7 +1411,6 @@ class AudioRecorder():
             self.stream.close()
             self.audio.terminate()
             
-            print("Now ----------------------")
             print("Finished")
             waveFile = wave.open(self.audio_filename, 'wb')
             waveFile.setnchannels(self.channels)
@@ -1528,8 +1637,7 @@ class ThreadInternetConnection(QThread):
 class ThreadDeviceCheckConnection(QThread):
     # Create the signal
     ShowErrorPanel = pyqtSignal(str)
-    GoNextStep =pyqtSignal(bool)
-    HandleBlackList = pyqtSignal()
+    openListOfClosingApp =pyqtSignal(str)
 
     
     def __init__(self,window):
@@ -1650,7 +1758,6 @@ class ThreadDeviceCheckConnection(QThread):
         loop.exec_()
 
 
-        self.HandleBlackList.emit()
 
         if not self.checkVmWare():
             self.WindowPanel.bar_system.setVisible(True)
@@ -1666,10 +1773,12 @@ class ThreadDeviceCheckConnection(QThread):
     def run(self):
         self.CheckDevices()
         if self.checkResult:
-            self.GoNextStep.emit(True)
+            # here we will show the list of the closed apps so we will proceed or close the App
+            self.openListOfClosingApp.emit("Nothing")
         else:
             self.ShowErrorPanel.emit("Please Check the Last Devices")
         
+
 
 # Camera For Pose Thread
 class ThreadCamera(QThread):
@@ -1890,6 +1999,7 @@ class ThreadCameraHand(QThread):
     changePixmap = pyqtSignal(QImage)
     setStringData = pyqtSignal(str)
     checkingEnded = pyqtSignal(bool)
+    reloadCameraShow = pyqtSignal(int)
 
     def __init__(self,window,token,examId,AllImagesHand):
         super(ThreadCameraHand,self).__init__(window)
@@ -1914,9 +2024,14 @@ class ThreadCameraHand(QThread):
         
     def sendImage(self,files,headers):
         try:
-            response = requests.post('http://34.245.70.4:3001/api/upload/files',files = files,headers=headers,timeout = 3)
-            self.AllImagesHand.append(response.json()['files'][0]['name'])
+            try:
+                response = requests.post('http://34.245.70.4:3001/api/upload/files',files = files,headers=headers,timeout = 3)
+                self.AllImagesHand.append(response.json()['files'][0]['name'])
+            except:
+                print('Error upload hand')
             self.checkingEnded.emit(False)
+            self.reloadCameraShow.emit(0)
+            print('-------------------------------')
             # print(response.json()['files'][0]['name'])
         except:
             pass
@@ -2014,13 +2129,14 @@ class ThreadCameraHand(QThread):
                         
                 
         cap.release()
-        self.setStringData.emit('Prepair Your Id')
+        self.setStringData.emit('Prepair Your Id or ReCapture')
     
 
 class ThreadCameraId(QThread):
     changePixmap = pyqtSignal(QImage)
     setStringData = pyqtSignal(str)
     checkingEnded = pyqtSignal(bool)
+    reloadCameraShow = pyqtSignal(int)
 
     def __init__(self,window,token,examId,AllImagesId):
         super(ThreadCameraId,self).__init__(window)
@@ -2045,9 +2161,14 @@ class ThreadCameraId(QThread):
         
     def sendImage(self,files,headers):
         try:
-            response = requests.post('http://34.245.70.4:3001/api/upload/files',files = files,headers=headers,timeout = 3)
-            self.AllImagesId.append(response.json()['files'][0]['name'])
+            try:
+                response = requests.post('http://34.245.70.4:3001/api/upload/files',files = files,headers=headers,timeout = 3)
+                self.AllImagesId.append(response.json()['files'][0]['name'])
+            except:
+                print('Error upload hand')
             self.checkingEnded.emit(False)
+            self.reloadCameraShow.emit(1)
+            print('-------------------------------')
             # print(response.json()['files'][0]['name'])
         except:
             pass
@@ -2155,6 +2276,8 @@ class ThreadCameraVideo(QThread):
     changeStrTime = pyqtSignal(str)
     
     audio_thread = None
+    frame_counts = 0
+    start_time = time.time()
     
 
     
@@ -2179,7 +2302,7 @@ class ThreadCameraVideo(QThread):
         
         self.fps = int(self.cap.get(cv2.CAP_PROP_FPS))
         self.out = cv2.VideoWriter()
-        self.out.open(self.PathOfFile, fourcc,  25, (250, 250),True)
+        self.out.open(self.PathOfFile, fourcc,  15, (250, 250),True)
         self.filenameWav = tempfile.gettempdir()+"\\"+str(self.getUnique())+".wav"
         self.audio_thread = AudioRecorder(filename=self.filenameWav, rate=44100, fpb=1024, channels=2)
 
@@ -2190,9 +2313,11 @@ class ThreadCameraVideo(QThread):
         fourcc2 = cv2.VideoWriter_fourcc(*'H264')
         # create the video write object
         self.outScreen = cv2.VideoWriter()
-        self.outScreen.open(self.PathNameOfFileScreen, fourcc2, 25, (250,250), True)
+        self.outScreen.open(self.PathNameOfFileScreen, fourcc2, 15, (250,250), True)
         self.audio_thread.start()
         count = 0
+        self.frame_counts = 1
+        self.start_time = time.time()
         while True:
             
             imgScreen = pyautogui.screenshot()
@@ -2235,6 +2360,7 @@ class ThreadCameraVideo(QThread):
                 bytesPerLine = ch * w
                 convertToQtFormat = QImage(rgbImage.data, w, h, bytesPerLine, QImage.Format_RGB888)
                 self.changePixmap.emit(convertToQtFormat)
+                self.frame_counts += 1
 
          
         self.cap.release()

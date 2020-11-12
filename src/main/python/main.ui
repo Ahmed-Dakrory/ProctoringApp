@@ -1412,6 +1412,52 @@ qproperty-alignment: AlignCenter;
         <string>Follow Pose</string>
        </property>
       </widget>
+      <widget class="QPushButton" name="repeatButton">
+       <property name="geometry">
+        <rect>
+         <x>540</x>
+         <y>40</y>
+         <width>41</width>
+         <height>41</height>
+        </rect>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">QPushButton{
+	background-color: #25BF0B;
+        border-style: outset;
+        border-width: 1px;
+        border-radius: 20px;
+        border-color: #e8e8e8;
+        padding: 4px;
+        color: #fbfbfb;
+        font-size: 15px;
+        font-weight: 700;}
+        
+        QPushButton:hover{
+	background-color: #63F64A;
+        border-style: outset;
+        border-width: 1px;
+        border-radius: 20px;
+        border-color: #e8e8e8;
+        padding: 4px;
+        color: #565050;
+        font-size: 15px;
+        font-weight: 700;}</string>
+       </property>
+       <property name="text">
+        <string/>
+       </property>
+       <property name="icon">
+        <iconset>
+         <normaloff>imageface/Repeat.png</normaloff>imageface/Repeat.png</iconset>
+       </property>
+       <property name="iconSize">
+        <size>
+         <width>35</width>
+         <height>35</height>
+        </size>
+       </property>
+      </widget>
      </widget>
     </widget>
    </widget>
