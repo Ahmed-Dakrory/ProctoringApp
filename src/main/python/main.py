@@ -26,7 +26,8 @@ import psutil
 import math
 
 import os
-
+import win32api
+import winput
 
 ################################
 # Those for the Devices Checking
@@ -51,6 +52,17 @@ import tensorflow as tf
 import dlib
 from imutils import face_utils
 import keyboard
+
+
+
+#######################################
+numberOfRunning = 0
+for proc in psutil.process_iter():
+    if proc.name() == "Proctoring.exe":
+        numberOfRunning+=1
+        if numberOfRunning >1:
+            print("Killed")
+            proc.kill()
 
 #######################################################
 #folder to store face images
@@ -548,6 +560,8 @@ keyboard.add_hotkey("shift + f10", lambda: None, suppress =True)
 
 
 
+
+
 class GUI(QMainWindow):
     def __init__(self,appctxt):
         
@@ -619,6 +633,14 @@ class GUI(QMainWindow):
         # print(self.Username)
         self.testname_label.setText(self.TestName)
         self.testduration_label.setText(str(self.TestDuration) )
+
+
+
+        self.thMouse = ThreadMouse(self)
+        self.thMouse.start()
+
+
+        
         self.show()
         self.goNextStep(True)
         self.exit_code = self.appctxt.app.exec_()      # 2. Invoke appctxt.app.exec_()
@@ -833,15 +855,21 @@ class GUI(QMainWindow):
         # cmd = '"'+dir_path+'\\ffmpeg.exe" -y -i "'+self.th.PathOfFile+'" -i "'+self.th.filenameWav+'" -filter_complex "[0:v]setpts=PTS*0.99*'+timeOfAudio+'/'+timeOfVideo+'[v]" -map "[v]" -map 1:a -shortest -vcodec libvpx-vp9 "' +self.th.PathOfFileUploaded+'"'
         # cmd = '"'+dir_path+'\\ffmpeg.exe" -y -ac 2 -channel_layout stereo -i "'+self.th.PathOfFile+'" -i "'+self.th.filenameWav+'" -c:v copy -c:a aac -map 0:v:0 -map 1:a:0 "' +self.th.PathOfFileUploaded+'"'
         # subprocess.call(cmd, shell=True)
-        cmd = '"'+dir_path+'\\ffmpeg.exe" -itsscale '+str(timescale)+' -i "'+self.th.PathOfFile+'" -codec copy temp_video.mp4'
+        t = datetime.datetime.now()
+        dateRand = (t-datetime.datetime(1970,1,1)).total_seconds()
+        newName =  int(math.floor(random.randint(33333, 999999)) + dateRand)
+        
+        tempFile = str(newName)+'.mp4'
+        cmd = '"'+dir_path+'\\ffmpeg.exe" -itsscale '+str(timescale)+' -i "'+self.th.PathOfFile+'" -codec copy "'+tempfile.gettempdir()+"\\"+tempFile+'"'
         subprocess.call(cmd, shell=True)
 
         print("Muxing")
-        cmd = '"'+dir_path+'\\ffmpeg.exe" -y -ac 2 -channel_layout stereo -i temp_video.mp4 -i "'+self.th.filenameWav+'" -c:v copy -c:a aac -map 0:v:0 -map 1:a:0 "' +self.th.PathOfFileUploaded+'"'
+        cmd = '"'+dir_path+'\\ffmpeg.exe" -y -ac 2 -channel_layout stereo -i "'+tempfile.gettempdir()+"\\"+tempFile+'" -i "'+self.th.filenameWav+'" -c:v copy -c:a aac -map 0:v:0 -map 1:a:0 "' +self.th.PathOfFileUploaded+'"'
         subprocess.call(cmd, shell=True)
 
-        if os.path.exists("temp_video.mp4"):
-            os.remove("temp_video.mp4")
+        
+        if os.path.exists(tempfile.gettempdir()+"\\"+tempFile):
+            os.remove(tempfile.gettempdir()+"\\"+tempFile)
 
         self.thCloseApps.ThreadRunning = False
         self.OpenLoaderUpload()
@@ -878,8 +906,11 @@ class GUI(QMainWindow):
 
     def close(self):
         try:
+            
+            self.thMouse.threadMouseRun = False
             self.thUploadFileCamera.ThreadUploadingFiles = False
             self.thUploadFileScreen.ThreadUploadingFiles = False
+            
             
             # Delete the files
             if os.path.exists(self.th.PathOfFile):
@@ -1504,6 +1535,142 @@ class ThreadUploadFileCamera(QThread):
     def run(self):
         self.upload_fileCamera()
 
+
+
+# Close All Black listed Apps 
+class ThreadCloseApp(QThread):
+    # Create the signal
+    closeApp = pyqtSignal()
+
+    
+    def __init__(self,window):
+        super(ThreadCloseApp,self).__init__(window)
+        self.ThreadRunning = True
+
+
+    def run(self):
+        while self.ThreadRunning:
+            self.closeApp.emit()
+            QThread.msleep(5000)
+
+
+
+# Uploading Camera Screen 
+class ThreadUploadFileScreen(QThread):
+    # Create the signal
+    changePercentage = pyqtSignal(int)
+    changeLabel =pyqtSignal(str)
+    finishUploading =pyqtSignal()
+
+    
+    def getUnique(self,fileSize):
+        t = datetime.datetime.now()
+        dateRand = (t-datetime.datetime(1970,1,1)).total_seconds()
+        return int(math.floor(random.randint(33333, 999999)) + dateRand + fileSize)
+
+    
+    def __init__(self,window,PathOfFileUploaded,IdFromUploadedImages,token):
+        super(ThreadUploadFileScreen,self).__init__(window)
+        self.filename = PathOfFileUploaded
+        self.IdFromUploadedImages = IdFromUploadedImages
+        self.ThreadUploadingFiles = True
+        self.token = token
+
+    def upload_fileScreen(self):
+        chunksize = 10000
+        totalsize = os.path.getsize(self.filename)
+        totalChucks = math.ceil(totalsize/chunksize)
+        readsofar = 0
+        url = "http://34.245.70.4:3001/api/upload/video/"+str(self.IdFromUploadedImages)+"/SCREEN"
+        token = self.token
+        i = 0
+        uniqueId = self.getUnique(totalsize)
+        with open(self.filename, 'rb') as file:
+            while self.ThreadUploadingFiles:
+                try:
+                    data = file.read(chunksize)
+                    f = open(tempfile.gettempdir()+"\\"+"fileDownload", "wb")
+                    f.write(data)
+                    f.close()
+                    if not data:
+                        sys.stderr.write("\n")
+                        break
+                    readsofar += len(data)
+                    percent = readsofar * 1e2 / totalsize
+                    
+                    headers = {
+                        'Access-Control-Max-Age':'86400',
+                        'Access-Control-Allow-Methods': 'POST,OPTIONS' ,
+                        'Access-Control-Allow-Headers': 'uploader-chunk-number,uploader-chunks-total,uploader-file-id', 
+                        'Access-Control-Allow-Origin':'http://localhost:3000',
+                        'authorization': "Bearer "+token,
+                        'uploader-file-id': str(uniqueId),
+                        'uploader-chunks-total': str(totalChucks),
+                        'uploader-chunk-number': str(i)
+                        }
+
+                
+                    files = {'file': ("fileDownload",open(tempfile.gettempdir()+'\\'+'fileDownload', 'rb'),'application/octet-stream')}
+                    isUploaded = False
+                    while not isUploaded:
+                        try:
+                            r = requests.request('POST',url,files=files,headers=headers, verify=False)
+                            # print(r.text)
+                            isUploaded = True
+                            i+=1
+                        except Exception as exc:
+                            print(exc)
+                    self.changePercentage.emit(int(percent/2+50))
+                    
+                    self.changeLabel.emit("Screen "+str(int(percent))+"%")
+                    print("\r{percent:3.0f}%".format(percent=percent))
+                except:
+                    pass
+        self.finishUploading.emit()
+        
+
+    def run(self):
+        self.upload_fileScreen()
+
+
+# Internet Connection as it handle Requests
+class ThreadMouse(QThread):
+    # Create the signal
+
+    def __init__(self, mw, parent=None):
+        super().__init__(parent)
+        self.threadMouseRun = True
+
+    def run(self):
+        
+        state_left = win32api.GetKeyState(0x01)  # Left button down = 0 or 1. Button up = -127 or -128
+        state_right = win32api.GetKeyState(0x02)  # Right button down = 0 or 1. Button up = -127 or -128
+
+        while self.threadMouseRun:
+            b = win32api.GetKeyState(0x02)
+            if b != state_right:  # Button state changed
+                state_right = b
+                if b < 0:
+                    print('Right Button Pressed')
+                    winput.press_key(winput.VK_ESCAPE)
+                    time.sleep(0.1)
+                    winput.press_key(winput.VK_ESCAPE)
+                    time.sleep(0.001)
+                    winput.press_key(winput.VK_ESCAPE)
+                    time.sleep(0.001)
+                    winput.press_key(winput.VK_ESCAPE)
+                else:
+                    print('Right Button Released')
+                    # winput.move_mouse(-10, 1)
+                    
+                    winput.press_key(winput.VK_ESCAPE)
+                    time.sleep(0.1)
+                    winput.press_key(winput.VK_ESCAPE)
+                    time.sleep(0.001)
+                    winput.press_key(winput.VK_ESCAPE)
+                    time.sleep(0.001)
+                    winput.press_key(winput.VK_ESCAPE)
+            
 
 
 # Close All Black listed Apps 
