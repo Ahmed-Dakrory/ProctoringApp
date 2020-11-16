@@ -590,6 +590,8 @@ class GUI(QMainWindow):
         self.TestName = ''
         self.TestDuration = ''
         self.AllNotAllowed = None
+        self.isOnBoard = False
+        self.studentId = None
 
         self.WindowCameraOpened = False
 
@@ -850,26 +852,26 @@ class GUI(QMainWindow):
         timeOfVideo = str(subprocess_return)[2:len(str(subprocess_return))-5]
 
         
-        timescale = float(15)/float(recorded_fps)
+        timescale = 1 #float(15)/float(recorded_fps)
         # timescale = float(timeOfAudio)/float(timeOfVideo)
         # cmd = '"'+dir_path+'\\ffmpeg.exe" -y -i "'+self.th.PathOfFile+'" -i "'+self.th.filenameWav+'" -filter_complex "[0:v]setpts=PTS*0.99*'+timeOfAudio+'/'+timeOfVideo+'[v]" -map "[v]" -map 1:a -shortest -vcodec libvpx-vp9 "' +self.th.PathOfFileUploaded+'"'
         # cmd = '"'+dir_path+'\\ffmpeg.exe" -y -ac 2 -channel_layout stereo -i "'+self.th.PathOfFile+'" -i "'+self.th.filenameWav+'" -c:v copy -c:a aac -map 0:v:0 -map 1:a:0 "' +self.th.PathOfFileUploaded+'"'
         # subprocess.call(cmd, shell=True)
-        t = datetime.datetime.now()
-        dateRand = (t-datetime.datetime(1970,1,1)).total_seconds()
-        newName =  int(math.floor(random.randint(33333, 999999)) + dateRand)
+        # t = datetime.datetime.now()
+        # dateRand = (t-datetime.datetime(1970,1,1)).total_seconds()
+        # newName =  int(math.floor(random.randint(33333, 999999)) + dateRand)
         
-        tempFile = str(newName)+'.mp4'
-        cmd = '"'+dir_path+'\\ffmpeg.exe" -itsscale '+str(timescale)+' -i "'+self.th.PathOfFile+'" -codec copy "'+tempfile.gettempdir()+"\\"+tempFile+'"'
-        subprocess.call(cmd, shell=True)
+        # tempFile = str(newName)+'.mp4'
+        # cmd = '"'+dir_path+'\\ffmpeg.exe" -itsscale '+str(timescale)+' -i "'+self.th.PathOfFile+'" -codec copy "'+tempfile.gettempdir()+"\\"+tempFile+'"'
+        # subprocess.call(cmd, shell=True)
 
         print("Muxing")
-        cmd = '"'+dir_path+'\\ffmpeg.exe" -y -ac 2 -channel_layout stereo -i "'+tempfile.gettempdir()+"\\"+tempFile+'" -i "'+self.th.filenameWav+'" -c:v copy -c:a aac -map 0:v:0 -map 1:a:0 "' +self.th.PathOfFileUploaded+'"'
+        cmd = '"'+dir_path+'\\ffmpeg.exe" -y -ac 2 -channel_layout stereo -i "'+self.th.PathOfFile+'" -i "'+self.th.filenameWav+'" -c:v copy -c:a aac -map 0:v:0 -map 1:a:0 "' +self.th.PathOfFileUploaded+'"'
         subprocess.call(cmd, shell=True)
 
         
-        if os.path.exists(tempfile.gettempdir()+"\\"+tempFile):
-            os.remove(tempfile.gettempdir()+"\\"+tempFile)
+        # if os.path.exists(tempfile.gettempdir()+"\\"+tempFile):
+        #     os.remove(tempfile.gettempdir()+"\\"+tempFile)
 
         self.thCloseApps.ThreadRunning = False
         self.OpenLoaderUpload()
@@ -1024,9 +1026,12 @@ class GUI(QMainWindow):
             
             
         elif self.stepNow == 3: # step 3
-            self.predict()
+            if self.isOnBoard:
+                self.predict()
+            else:
+                self.Recognition()
         elif self.stepNow == 4: # step 3
-            if True:
+            if True and (self.isOnBoard):
                 self.pagerWindow.setCurrentIndex(self.stepNow)
                 self.repeatButton.setVisible(False)
                 self.predictHand()
@@ -1034,7 +1039,7 @@ class GUI(QMainWindow):
                 self.stepNow +=1
                 self.goNextStep(False)
         elif self.stepNow == 5: # step 3
-            if True:
+            if True and (self.isOnBoard):
                 self.pagerWindow.setCurrentIndex(self.stepNow)
                 self.repeatButton.setVisible(False)
                 self.predictId()
@@ -1042,30 +1047,31 @@ class GUI(QMainWindow):
                 self.stepNow +=1
                 self.goNextStep(False)
         elif self.stepNow == 6:
-            SentTheImages = True
-            while SentTheImages:
-                headers = {'authorization': "Bearer "+str(self.token)}
-                if len(self.AllImagesFaces) > 0 and len(self.AllImagesHand) > 0 and len(self.AllImagesId) > 0 :
-                    dataNew = {"faceImages":self.AllImagesFaces,
-                                "knuckleImages":self.AllImagesHand,
-                                "idImages":self.AllImagesId,"TestId":self.examId}
-                elif len(self.AllImagesFaces) > 0 and len(self.AllImagesId) > 0 :
-                    dataNew = {"faceImages":self.AllImagesFaces,
-                                "idImages":self.AllImagesId,"TestId":self.examId}
-                elif len(self.AllImagesFaces) > 0 and len(self.AllImagesHand) > 0 :
-                    dataNew = {"faceImages":self.AllImagesFaces,
-                                "knuckleImages":self.AllImagesHand,"TestId":self.examId}
-                else  :
-                    dataNew = {"faceImages":self.AllImagesFaces,"TestId":self.examId}
-                print(dataNew)
-                UrlPostData = 'http://34.245.70.4:3001/api/user/proctoring-images'
-                response = requests.post(UrlPostData,json=dataNew,headers=headers)
-                try:
-                    self.IdFromUploadedImages = response.json()['userTestTrial']['id']
-                    SentTheImages = False
-                except:
-                    print('---------------------------------------------')
-                    print(response.text)
+            if (self.isOnBoard):
+                SentTheImages = True
+                while SentTheImages:
+                    headers = {'authorization': "Bearer "+str(self.token)}
+                    if len(self.AllImagesFaces) > 0 and len(self.AllImagesHand) > 0 and len(self.AllImagesId) > 0 :
+                        dataNew = {"faceImages":self.AllImagesFaces,
+                                    "knuckleImages":self.AllImagesHand,
+                                    "idImages":self.AllImagesId,"TestId":self.examId}
+                    elif len(self.AllImagesFaces) > 0 and len(self.AllImagesId) > 0 :
+                        dataNew = {"faceImages":self.AllImagesFaces,
+                                    "idImages":self.AllImagesId,"TestId":self.examId}
+                    elif len(self.AllImagesFaces) > 0 and len(self.AllImagesHand) > 0 :
+                        dataNew = {"faceImages":self.AllImagesFaces,
+                                    "knuckleImages":self.AllImagesHand,"TestId":self.examId}
+                    else  :
+                        dataNew = {"faceImages":self.AllImagesFaces,"TestId":self.examId}
+                    print(dataNew)
+                    UrlPostData = 'http://34.245.70.4:3001/api/user/proctoring-images'
+                    response = requests.post(UrlPostData,json=dataNew,headers=headers)
+                    try:
+                        self.IdFromUploadedImages = response.json()['userTestTrial']['id']
+                        SentTheImages = False
+                    except:
+                        print('---------------------------------------------')
+                        print(response.text)
             
             self.stepNow +=1
             self.goNextStep(False)
@@ -1132,6 +1138,7 @@ class GUI(QMainWindow):
             response = requests.post(UrlPostData,json=dataNew)
             self.Username = response.json()['user']['firstName']
             self.IsVerified = response.json()['user']['active']
+            self.studentId = response.json()['user']['UserId']
             
             headers = {'authorization': "Bearer "+str(self.token)}
             dataNew = {"token": self.token}
@@ -1140,6 +1147,8 @@ class GUI(QMainWindow):
             
             print("-----------Request--------------")
             self.TestName = response.json()['test']['name']
+            self.isOnBoard = response.json()['test']['onboardingTest']
+            # self.isOnBoard = False
             self.TestDuration = str(response.json()['test']['duration']) +' m'
             self.AllNotAllowed = response.json()['testWhiteListApps']
             listAllow = list(['SettingSyncHost.exe','MsMpEng.exe','SASrv.exe','unsecapp.exe','AGMService.exe',
@@ -1202,6 +1211,7 @@ class GUI(QMainWindow):
 
             if not isExist:
                 try:
+                    # here remove kill 
                     proc.kill()
                     # print("--------------------------------")
                     # print("Kill "+proc.name())
@@ -1317,6 +1327,20 @@ class GUI(QMainWindow):
         self.followPoseHandAndId.setText(title)
         
 
+    @pyqtSlot(str)
+    def recognitionFail(self,statment):
+        self.hide()
+        self.error = QMainWindow()
+        self.error.setAttribute(Qt.WA_TranslucentBackground)
+        uic.loadUi(self.dir_path+'\error.ui', self.error) # Load the .ui file
+        self.error.errorLabel.setText(statment)
+        
+        self.error.setWindowFlags(Qt.WindowStaysOnTopHint | Qt.FramelessWindowHint)
+        self.error.okError.clicked.connect(self.restart)
+        self.error.close.clicked.connect(self.close)
+        self.error.show()
+  
+
     @pyqtSlot(bool)
     def goCheckingForNext(self,statues):
         # self.stepNow +=1
@@ -1372,6 +1396,17 @@ class GUI(QMainWindow):
             self.predictId()
         
 
+    def Recognition(self):
+        print("Start Recognition")
+        self.Thread_Of_Prediction_Is_Run = True
+        self.thCamera = ThreadCameraRecognition(self,self.token,self.examId,self.studentId,self.AllImagesFaces)
+        self.thCamera.changePixmap.connect(self.setImage)
+        self.thCamera.setPose.connect(self.setCameraPose)
+        self.thCamera.setBoolStateFace.connect(self.setBoolImageFace)
+        self.thCamera.checkingEnded.connect(self.goCheckingForNext)
+        self.thCamera.recognitionFailCamera.connect(self.recognitionFail)
+        self.thCamera.start()
+
     def predict(self):
         print("Start Prediction")
         # self.camera.startCap()
@@ -1382,6 +1417,8 @@ class GUI(QMainWindow):
         self.thCamera.setBoolStateFace.connect(self.setBoolImageFace)
         self.thCamera.checkingEnded.connect(self.goCheckingForNext)
         self.thCamera.start()
+    
+
 
     def predictHand(self):
         print("Start Prediction Hand")
@@ -1409,7 +1446,7 @@ class GUI(QMainWindow):
 
 class AudioRecorder():
     "Audio class based on pyAudio and Wave"
-    def __init__(self, filename="temp_audio.wav", rate=44100, fpb=1024, channels=2):
+    def __init__(self, filename="temp_audio.wav", rate=15360, fpb=1024, channels=2):
         self.open = True
         self.rate = rate
         self.frames_per_buffer = fpb
@@ -1425,14 +1462,6 @@ class AudioRecorder():
         self.audio_frames = []
         print(self.audio_filename)
 
-    def record(self):
-        "Audio starts being recorded"
-        self.stream.start_stream()
-        while self.open:
-            data = self.stream.read(self.frames_per_buffer) 
-            self.audio_frames.append(data)
-            if not self.open:
-                break
 
     def stop(self):
         "Finishes the audio recording therefore the thread too"
@@ -1450,10 +1479,7 @@ class AudioRecorder():
             waveFile.writeframes(b''.join(self.audio_frames))
             waveFile.close()
 
-    def start(self):
-        "Launches the audio recording function using a thread"
-        audio_thread = threading.Thread(target=self.record)
-        audio_thread.start()
+    
 
 
 
@@ -1945,6 +1971,190 @@ class ThreadDeviceCheckConnection(QThread):
         else:
             self.ShowErrorPanel.emit("Please Check the Last Devices")
         
+
+# Camera For Pose Thread
+class ThreadCameraRecognition(QThread):
+    changePixmap = pyqtSignal(QImage)
+    setPose = pyqtSignal(str)
+    setBoolStateFace = pyqtSignal(bool)
+    checkingEnded = pyqtSignal(bool)
+    recognitionFailCamera= pyqtSignal(str)
+
+    def __init__(self,window,token,examId,studentId,AllImages):
+        super(ThreadCameraRecognition,self).__init__(window)
+        self.token = token
+        self.examId = examId
+        self.FinalImage = 5
+        self.AllImages = AllImages
+        self.studentId = studentId
+
+
+        
+
+
+    def run(self):
+        mark_detector = MarkDetector()
+        poses=['verifying']
+        file=0
+        cap = cv2.VideoCapture(file)
+        
+        ret, sample_frame = cap.read()
+        if ret==False:
+            return    
+            
+        # Introduce pose estimator to solve pose. Get one frame to setup the
+        # estimator according to the image size.
+        height, width = sample_frame.shape[:2]
+        pose_estimator = PoseEstimator(img_size=(height, width))
+        
+        # Introduce scalar stabilizers for pose.
+        pose_stabilizers = [Stabilizer(
+            state_num=2,
+            measure_num=1,
+            cov_process=0.1,
+            cov_measure=0.1) for _ in range(6)]
+        images_saved_per_pose=0
+        number_of_images = 0
+        
+        shape_predictor = dlib.shape_predictor(dir_path+"/shape_predictor_68_face_landmarks.dat")
+        face_aligner = FaceAligner(shape_predictor, desiredFaceWidth=FACE_WIDTH)
+        
+
+       
+        
+        pose_index = 0
+        count = 0  
+            
+        
+        images_saved_per_pose=0
+        number_of_images = 0
+        
+        while pose_index<1:
+            saveit = False
+            # Read frame, crop it, flip it, suits your needs.
+            ret, frame = cap.read()
+            if ret is False:
+                break
+            if count % 10 !=0: # skip 10 frames
+                count+=1
+                continue
+            if images_saved_per_pose==IMAGE_PER_POSE:
+                pose_index+=1
+                images_saved_per_pose=0
+
+            # If frame comes from webcam, flip it so it looks like a mirror.
+            frame = cv2.flip(frame, 2)
+
+            
+            frame_for_cam=frame.copy()
+            original_frame=frame.copy()
+            frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            
+            # Show the image
+
+
+            # here responsible for show image
+            height, width = frame.shape[:2] 
+            # frame =frame[int(height/4):int(3/4*height),int(width/3):int(2/3*width)]
+            frame_for_cam =frame_for_cam[int(0):int(7/8*height),int(width/5):int(4/5*width)]
+            
+            scale_percent = 55 # percent of original size
+            widthNew = int(frame_for_cam.shape[1] * scale_percent / 100)
+            heightNew = int(frame_for_cam.shape[0] * scale_percent / 100)
+            dimOld = (widthNew, heightNew)
+            frame_for_cam = cv2.resize(frame_for_cam, dimOld, interpolation = cv2.INTER_AREA)
+
+            rgbImage = cv2.cvtColor(frame_for_cam, cv2.COLOR_BGR2RGB)
+            h, w, ch = rgbImage.shape
+            bytesPerLine = ch * w
+
+            convertToQtFormat = QImage(rgbImage.data, w, h, bytesPerLine, QImage.Format_RGB888)
+            self.changePixmap.emit(convertToQtFormat)
+                
+            # end of show image
+
+            #
+            
+            facebox = mark_detector.extract_cnn_facebox(frame)
+        
+            if facebox is not None:
+                # Detect landmarks from image of 128x128.
+                x1=max(facebox[0]-0,0)
+                x2=min(facebox[2]+0,width)
+                y1=max(facebox[1]-0,0)
+                y2=min(facebox[3]+0,height)
+                
+                face = frame[y1: y2,x1:x2]
+                face_img = cv2.resize(face, (CNN_INPUT_SIZE, CNN_INPUT_SIZE))
+                face_img = cv2.cvtColor(face_img, cv2.COLOR_BGR2RGB)
+                
+                marks = mark_detector.detect_marks([face_img])
+        
+                # Convert the marks locations from local CNN to global image.
+                marks *= (facebox[2] - facebox[0])
+                marks[:, 0] += facebox[0]
+                marks[:, 1] += facebox[1]
+            
+                # Try pose estimation with 68 points.
+                pose = pose_estimator.solve_pose_by_68_points(marks)
+        
+                # Stabilize the pose.
+                steady_pose = []
+                pose_np = np.array(pose).flatten()
+                for value, ps_stb in zip(pose_np, pose_stabilizers):
+                    ps_stb.update([value])
+                    steady_pose.append(ps_stb.state[0])
+                steady_pose = np.reshape(steady_pose, (-1, 3))
+        
+                if pose_index==0:
+                    if abs(steady_pose[0][0])<ANGLE_THRESHOLD and abs(steady_pose[0][1])<ANGLE_THRESHOLD:
+                        images_saved_per_pose+=1
+                        
+                        self.setBoolStateFace.emit(False)
+                        saveit = True
+                        dimOld = (160, 160)
+                        image = cv2.resize(face, dimOld, interpolation = cv2.INTER_AREA)
+                        # Save the image to the server with this id
+                        imencoded = cv2.imencode('.jpg', image)[1]
+                        fileName = 'recognimage.jpg'
+                        files = {'image': (fileName, imencoded.tostring(), 'image/jpeg', {'Expires': '0'})}
+                        payload = {"secretKey": "17iooi1kfb8qq1b",
+                                "privateKey":"160061482862217iooi1kfb8qq1c"}
+                        try:
+                            urlRecognition = "http://54.74.171.130:8083/faceTheAnalysis"
+                            response = requests.request("POST", urlRecognition,files = files,data = payload)
+                            print(response.text)
+                            print(response.json()['state'])
+                            if response.json()['state'] == 'findFace' and str(self.studentId) == response.json()['personId']:
+                                pose_index = 1
+                                self.setPose.emit('Thank you')
+                                cap.release()
+                                self.setPose.emit('Verified')
+                                self.checkingEnded.emit(True)
+                                break
+                        except:
+                            cap.release()
+                            self.recognitionFailCamera.emit('There is a problem in the server')
+                            break
+                    else:
+                        self.setBoolStateFace.emit(True)         
+                if pose_index>=1:
+                    cap.release()
+                    self.recognitionFailCamera.emit('You are not Allowed')
+                    break
+
+                # frame = cv2.rectangle(frame, (x1,y1), (x2,y2),(255,255,0),2)
+
+            try:
+                self.setPose.emit(str(poses[pose_index] +' : '+ str(images_saved_per_pose)+'/'+str(IMAGE_PER_POSE)))
+            except:
+                pass
+            # self.setPose.emit('Look '+str(poses[pose_index]))
+             
+                
+                
+                        
+                
 
 
 # Camera For Pose Thread
@@ -2458,7 +2668,7 @@ class ThreadCameraVideo(QThread):
 
     def run(self):
         self.cap = cv2.VideoCapture(0)
-        
+        print("Start Cap....................")
         self.NameOfFile = str(self.getUnique())+'.mp4'
         self.NameOfFileScreen = str(self.getUnique())+'.mp4'
         self.PathOfFile = tempfile.gettempdir()+"\\"+self.NameOfFile
@@ -2471,8 +2681,9 @@ class ThreadCameraVideo(QThread):
         self.out = cv2.VideoWriter()
         self.out.open(self.PathOfFile, fourcc,  15, (250, 250),True)
         self.filenameWav = tempfile.gettempdir()+"\\"+str(self.getUnique())+".wav"
-        self.audio_thread = AudioRecorder(filename=self.filenameWav, rate=44100, fpb=1024, channels=2)
+        self.audio_thread = AudioRecorder(filename=self.filenameWav, rate=15360, fpb=1024, channels=2)
 
+        
         # display screen resolution, get it from your OS settings
         
         SCREEN_SIZE = pyautogui.size()
@@ -2481,7 +2692,8 @@ class ThreadCameraVideo(QThread):
         # create the video write object
         self.outScreen = cv2.VideoWriter()
         self.outScreen.open(self.PathNameOfFileScreen, fourcc2, 15, (250,250), True)
-        self.audio_thread.start()
+        self.audio_thread.stream.start_stream()
+        
         count = 0
         self.frame_counts = 1
         self.start_time = time.time()
@@ -2496,6 +2708,11 @@ class ThreadCameraVideo(QThread):
             frameScreen = cv2.resize(frameScreen, dimOld, interpolation = cv2.INTER_AREA)
             # write the frame
             self.outScreen.write(frameScreen)
+            # write the audio
+            data = self.audio_thread.stream.read(self.audio_thread.frames_per_buffer) 
+            self.audio_thread.audio_frames.append(data)
+            if not self.audio_thread.open:
+                break
             ret, sample_frame = self.cap.read()
             count+= 1
             if ret:
