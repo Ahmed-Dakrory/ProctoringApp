@@ -38,6 +38,8 @@ import wmi
 import urllib
 import ctypes
 from ctypes import *
+import socket
+
 
 kernel32 = ctypes.WinDLL('kernel32')
 user32 = ctypes.WinDLL('user32')
@@ -557,6 +559,7 @@ class MarkDetector:
 keyboard.add_hotkey("alt + f4", lambda: None, suppress =True)
 keyboard.add_hotkey("ctrl + c", lambda: None, suppress =True)
 keyboard.add_hotkey("shift + f10", lambda: None, suppress =True)
+keyboard.add_hotkey("PrtScn", lambda: None, suppress =True)
 
 
 
@@ -663,7 +666,7 @@ class GUI(QMainWindow):
         headers = {'authorization': "Bearer "+str(self.token)}
         dataNew = {"status": True}
         UrlPostData = 'http://34.245.70.4:3001/api/test/allow-test-student/'+self.examId
-        response = requests.put(UrlPostData,json=dataNew,headers=headers)
+        response = requests.put(UrlPostData,json=dataNew,headers=headers,timeout=1)
         self.message = response.json()['message']
         print(self.message)
         print(response.text)
@@ -707,8 +710,11 @@ class GUI(QMainWindow):
         font-weight: 700;}""")
         self.LoaderUpload.predictButton.setEnabled(False)
 
+
+        
+        
         #########################################################
-        self.thUploadFileCamera = ThreadUploadFileCamera(self,self.th.PathOfFileUploaded,self.IdFromUploadedImages,self.token)
+        self.thUploadFileCamera = ThreadUploadFileCamera(self,self.th.PathOfFileUploaded,self.IdFromUploadedImages,self.token,self.th)
         self.thUploadFileCamera.changePercentage.connect(self.progressBarValue)
         self.thUploadFileCamera.changeLabel.connect(self.setVideoUploadingLabelProgress)
         self.thUploadFileCamera.uploadScreen.connect(self.uploadScreenRun)
@@ -792,8 +798,8 @@ class GUI(QMainWindow):
 
 
     def OpenCameraApp(self):
-        self.thCloseApps = ThreadCloseApp(self)
-        self.thCloseApps.closeApp.connect(self.closeAllBlackList)
+        self.thCloseAppsThreadRunning=True
+        self.thCloseApps = threading.Thread(target=self.while_closeAllBlackList, args=())
         self.thCloseApps.start()
 
         self.hide()
@@ -832,31 +838,34 @@ class GUI(QMainWindow):
         return fmt.format(**d)
         
     def EndTheExam(self):
+        keyboard.unhook_all_hotkeys()
+        
+        self.thMouse.threadMouseRun =False
+        
+        self.th.ThreadCameraVideoIsRun = False
         self.th.cap.release()
         self.th.out.release()
         self.th.outScreen.release()
         self.th.audio_thread.stop()
 
-        elapsed_time = time.time() - self.th.start_time
-        frame_counts = self.th.frame_counts
-        recorded_fps = frame_counts / elapsed_time
+        # elapsed_time = time.time() - self.th.start_time
+        # frame_counts = self.th.frame_counts
+        # recorded_fps = frame_counts / elapsed_time
         
-        audioCommand = subprocess.Popen('"'+dir_path+'\\ffprobe" -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "'+self.th.filenameWav+'"', shell=False, stdout=subprocess.PIPE)
-        subprocess_return = audioCommand.stdout.read()
+        # audioCommand = subprocess.Popen('"'+dir_path+'\\ffprobe" -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "'+self.th.filenameWav+'"', shell=False, stdout=subprocess.PIPE)
+        # subprocess_return = audioCommand.stdout.read()
 
-        timeOfAudio = str(subprocess_return)[2:len(str(subprocess_return))-5]
+        # timeOfAudio = str(subprocess_return)[2:len(str(subprocess_return))-5]
 
-        videoCommand = subprocess.Popen('"'+dir_path+'\\ffprobe" -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "'+self.th.PathOfFile+'"', shell=False, stdout=subprocess.PIPE)
-        subprocess_return = videoCommand.stdout.read()
+        # videoCommand = subprocess.Popen('"'+dir_path+'\\ffprobe" -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "'+self.th.PathOfFile+'"', shell=False, stdout=subprocess.PIPE)
+        # subprocess_return = videoCommand.stdout.read()
 
-        timeOfVideo = str(subprocess_return)[2:len(str(subprocess_return))-5]
+        # timeOfVideo = str(subprocess_return)[2:len(str(subprocess_return))-5]
 
         
-        timescale = 1 #float(15)/float(recorded_fps)
+        # timescale = 1 #float(15)/float(recorded_fps)
         # timescale = float(timeOfAudio)/float(timeOfVideo)
         # cmd = '"'+dir_path+'\\ffmpeg.exe" -y -i "'+self.th.PathOfFile+'" -i "'+self.th.filenameWav+'" -filter_complex "[0:v]setpts=PTS*0.99*'+timeOfAudio+'/'+timeOfVideo+'[v]" -map "[v]" -map 1:a -shortest -vcodec libvpx-vp9 "' +self.th.PathOfFileUploaded+'"'
-        # cmd = '"'+dir_path+'\\ffmpeg.exe" -y -ac 2 -channel_layout stereo -i "'+self.th.PathOfFile+'" -i "'+self.th.filenameWav+'" -c:v copy -c:a aac -map 0:v:0 -map 1:a:0 "' +self.th.PathOfFileUploaded+'"'
-        # subprocess.call(cmd, shell=True)
         # t = datetime.datetime.now()
         # dateRand = (t-datetime.datetime(1970,1,1)).total_seconds()
         # newName =  int(math.floor(random.randint(33333, 999999)) + dateRand)
@@ -865,15 +874,15 @@ class GUI(QMainWindow):
         # cmd = '"'+dir_path+'\\ffmpeg.exe" -itsscale '+str(timescale)+' -i "'+self.th.PathOfFile+'" -codec copy "'+tempfile.gettempdir()+"\\"+tempFile+'"'
         # subprocess.call(cmd, shell=True)
 
-        print("Muxing")
-        cmd = '"'+dir_path+'\\ffmpeg.exe" -y -ac 2 -channel_layout stereo -i "'+self.th.PathOfFile+'" -i "'+self.th.filenameWav+'" -c:v copy -c:a aac -map 0:v:0 -map 1:a:0 "' +self.th.PathOfFileUploaded+'"'
-        subprocess.call(cmd, shell=True)
+        # print("Muxing")
+        # cmd = '"'+dir_path+'\\ffmpeg.exe" -y -ac 2 -channel_layout stereo -i "'+self.th.PathOfFile+'" -i "'+self.th.filenameWav+'" -c:v copy -c:a aac -map 0:v:0 -map 1:a:0 "' +self.th.PathOfFileUploaded+'"'
+        # subprocess.call(cmd, shell=True)
 
         
         # if os.path.exists(tempfile.gettempdir()+"\\"+tempFile):
         #     os.remove(tempfile.gettempdir()+"\\"+tempFile)
 
-        self.thCloseApps.ThreadRunning = False
+        self.thCloseAppsThreadRunning=False
         self.OpenLoaderUpload()
         
         # QCoreApplication.exit(0)
@@ -912,6 +921,7 @@ class GUI(QMainWindow):
             self.thMouse.threadMouseRun = False
             self.thUploadFileCamera.ThreadUploadingFiles = False
             self.thUploadFileScreen.ThreadUploadingFiles = False
+            
             
             
             # Delete the files
@@ -1151,7 +1161,7 @@ class GUI(QMainWindow):
             # self.isOnBoard = False
             self.TestDuration = str(response.json()['test']['duration']) +' m'
             self.AllNotAllowed = response.json()['testWhiteListApps']
-            listAllow = list(['SettingSyncHost.exe','MsMpEng.exe','SASrv.exe','unsecapp.exe','AGMService.exe',
+            listAllow = list(['Taskmgr.exe','ClearPassOnGuard.exe','SettingSyncHost.exe','MsMpEng.exe','SASrv.exe','unsecapp.exe','AGMService.exe',
                             'AGSService.exe','CAudioFilterAgent64.exe','igfxHK.exe','sihost.exe','SecurityHealthSystray.exe',
                             'SearchFilterHost.exe','WmiPrvSE.exe','fbs.exe','RtkBtManServ.exe','ETDService.exe'
                             'SearchProtocolHost.exe','dllhost.exe','PanGPA.exe','IEMonitor.exe','ETDCtrl.exe',
@@ -1197,7 +1207,12 @@ class GUI(QMainWindow):
 
         
 
-    
+    def while_closeAllBlackList(self):
+        while self.thCloseAppsThreadRunning:
+            self.closeAllBlackList()
+            time.sleep(5)
+
+            
     @pyqtSlot()
     def closeAllBlackList(self):
         # PROCNAME = "notepad.exe"
@@ -1446,7 +1461,7 @@ class GUI(QMainWindow):
 
 class AudioRecorder():
     "Audio class based on pyAudio and Wave"
-    def __init__(self, filename="temp_audio.wav", rate=15360, fpb=1024, channels=2):
+    def __init__(self, filename="temp_audio.wav", rate=20480, fpb=1024, channels=2):
         self.open = True
         self.rate = rate
         self.frames_per_buffer = fpb
@@ -1497,14 +1512,23 @@ class ThreadUploadFileCamera(QThread):
         return int(math.floor(random.randint(33333, 999999)) + dateRand + fileSize)
 
     
-    def __init__(self,window,PathOfFileUploaded,IdFromUploadedImages,token):
+    def __init__(self,window,PathOfFileUploaded,IdFromUploadedImages,token,th):
         super(ThreadUploadFileCamera,self).__init__(window)
         self.filename = PathOfFileUploaded
         self.IdFromUploadedImages = IdFromUploadedImages
         self.ThreadUploadingFiles = True
         self.token = token
+        self.th = th
+        
 
     def upload_fileCamera(self):
+
+        
+        self.changeLabel.emit("Processing ...")
+
+        cmd = '"'+dir_path+'\\ffmpeg.exe" -y -ac 2 -channel_layout stereo -i "'+self.th.PathOfFile+'" -i "'+self.th.filenameWav+'" -c:v copy -c:a aac -map 0:v:0 -map 1:a:0 "' +self.th.PathOfFileUploaded+'"'
+        subprocess.call(cmd, shell=True)
+
         chunksize = 10000
         totalsize = os.path.getsize(self.filename)
         totalChucks = math.ceil(totalsize/chunksize)
@@ -1563,21 +1587,6 @@ class ThreadUploadFileCamera(QThread):
 
 
 
-# Close All Black listed Apps 
-class ThreadCloseApp(QThread):
-    # Create the signal
-    closeApp = pyqtSignal()
-
-    
-    def __init__(self,window):
-        super(ThreadCloseApp,self).__init__(window)
-        self.ThreadRunning = True
-
-
-    def run(self):
-        while self.ThreadRunning:
-            self.closeApp.emit()
-            QThread.msleep(5000)
 
 
 
@@ -1683,7 +1692,7 @@ class ThreadMouse(QThread):
                     winput.press_key(winput.VK_ESCAPE)
                     time.sleep(0.001)
                     winput.press_key(winput.VK_ESCAPE)
-                    time.sleep(0.001)
+                    time.sleep(0.3)
                     winput.press_key(winput.VK_ESCAPE)
                 else:
                     print('Right Button Released')
@@ -1694,26 +1703,11 @@ class ThreadMouse(QThread):
                     winput.press_key(winput.VK_ESCAPE)
                     time.sleep(0.001)
                     winput.press_key(winput.VK_ESCAPE)
-                    time.sleep(0.001)
+                    time.sleep(0.3)
                     winput.press_key(winput.VK_ESCAPE)
             
 
 
-# Close All Black listed Apps 
-class ThreadCloseApp(QThread):
-    # Create the signal
-    closeApp = pyqtSignal()
-
-    
-    def __init__(self,window):
-        super(ThreadCloseApp,self).__init__(window)
-        self.ThreadRunning = True
-
-
-    def run(self):
-        while self.ThreadRunning:
-            self.closeApp.emit()
-            QThread.msleep(5000)
 
 
 
@@ -2655,6 +2649,7 @@ class ThreadCameraVideo(QThread):
     audio_thread = None
     frame_counts = 0
     start_time = time.time()
+    ThreadCameraVideoIsRun = True
     
 
     
@@ -2665,9 +2660,9 @@ class ThreadCameraVideo(QThread):
         return int(math.floor(random.randint(33333, 999999)) + dateRand)
 
 
-
+    
     def run(self):
-        self.cap = cv2.VideoCapture(0)
+        self.cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
         print("Start Cap....................")
         self.NameOfFile = str(self.getUnique())+'.mp4'
         self.NameOfFileScreen = str(self.getUnique())+'.mp4'
@@ -2676,12 +2671,16 @@ class ThreadCameraVideo(QThread):
         self.PathNameOfFileScreen = tempfile.gettempdir()+"\\"+self.NameOfFileScreen
         fourcc = cv2.VideoWriter_fourcc(*'H264')
        
-        
-        self.fps = int(self.cap.get(cv2.CAP_PROP_FPS))
+        if int(self.cap.get(cv2.CAP_PROP_FPS)) == 0:
+            self.fps = 15
+        else:
+            self.fps = int(self.cap.get(cv2.CAP_PROP_FPS))*0.5
+        print("--------------------------------------")
+        print("FPS: ",self.fps)
         self.out = cv2.VideoWriter()
-        self.out.open(self.PathOfFile, fourcc,  15, (250, 250),True)
+        self.out.open(self.PathOfFile, fourcc,  self.fps, (250, 250),True)
         self.filenameWav = tempfile.gettempdir()+"\\"+str(self.getUnique())+".wav"
-        self.audio_thread = AudioRecorder(filename=self.filenameWav, rate=15360, fpb=1024, channels=2)
+        self.audio_thread = AudioRecorder(filename=self.filenameWav, rate=int(self.fps*1024), fpb=1024, channels=2)
 
         
         # display screen resolution, get it from your OS settings
@@ -2691,13 +2690,13 @@ class ThreadCameraVideo(QThread):
         fourcc2 = cv2.VideoWriter_fourcc(*'H264')
         # create the video write object
         self.outScreen = cv2.VideoWriter()
-        self.outScreen.open(self.PathNameOfFileScreen, fourcc2, 15, (250,250), True)
+        self.outScreen.open(self.PathNameOfFileScreen, fourcc2, self.fps, (250,250), True)
         self.audio_thread.stream.start_stream()
         
         count = 0
         self.frame_counts = 1
         self.start_time = time.time()
-        while True:
+        while self.ThreadCameraVideoIsRun:
             
             imgScreen = pyautogui.screenshot()
             # convert these pixels to a proper numpy array to work with OpenCV
@@ -2709,10 +2708,9 @@ class ThreadCameraVideo(QThread):
             # write the frame
             self.outScreen.write(frameScreen)
             # write the audio
-            data = self.audio_thread.stream.read(self.audio_thread.frames_per_buffer) 
-            self.audio_thread.audio_frames.append(data)
-            if not self.audio_thread.open:
-                break
+            
+            # if not self.audio_thread.open:
+            #     break
             ret, sample_frame = self.cap.read()
             count+= 1
             if ret:
@@ -2738,6 +2736,11 @@ class ThreadCameraVideo(QThread):
                 # height = self.cap.get(cv2.cv.CV_CAP_PROP_FRAME_HEIGHT) # float
                 dim = (250, 250)
                 frame = cv2.resize(frame, dim) 
+                if (self.audio_thread.open == True):
+                    data = self.audio_thread.stream.read(self.audio_thread.frames_per_buffer, exception_on_overflow = False) 
+                    self.audio_thread.audio_frames.append(data)
+                    if not self.audio_thread.open:
+                        break
                 self.out.write(frame)
                 rgbImage = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                 h, w, ch = rgbImage.shape
@@ -2746,7 +2749,7 @@ class ThreadCameraVideo(QThread):
                 self.changePixmap.emit(convertToQtFormat)
                 self.frame_counts += 1
 
-         
+        self.audio_thread.stop()
         self.cap.release()
         self.out.release()
         self.outScreen.release()

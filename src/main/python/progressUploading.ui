@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1047</width>
-    <height>537</height>
+    <height>540</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -20,7 +20,7 @@
    <string>MainWindow</string>
   </property>
   <property name="styleSheet">
-   <string notr="true">QMainWindow{background-color: rgb(7, 7, 7);}</string>
+   <string notr="true">QMainWindow{background: rgba(7, 7, 7,255);}</string>
   </property>
   <widget class="QWidget" name="centralwidget">
    <widget class="QPushButton" name="predictButton">
@@ -462,6 +462,29 @@ qproperty-alignment: AlignCenter;
      </property>
     </widget>
    </widget>
+   <widget class="QLabel" name="backgroundBlack">
+    <property name="geometry">
+     <rect>
+      <x>-4</x>
+      <y>0</y>
+      <width>1051</width>
+      <height>541</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">background-color: rgb(7, 7, 7);
+
+        border-style: outset;
+        border-width: 1px;
+        border-radius: 5px;
+        border-color: rgba(255, 255, 255, 0);
+        padding: 4px;</string>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+   </widget>
+   <zorder>backgroundBlack</zorder>
    <zorder>predictButton</zorder>
    <zorder>minimizeButton</zorder>
    <zorder>groupBox_3</zorder>
