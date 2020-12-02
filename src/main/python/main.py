@@ -6,6 +6,7 @@ from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5 import uic
 import tempfile
+from pydub import AudioSegment
 
 import wave
 import datetime
@@ -936,6 +937,11 @@ class GUI(QMainWindow):
 
             if os.path.exists(self.th.filenameWav):
                 os.remove(self.th.filenameWav)
+
+            if os.path.exists(tempfile.gettempdir()+"\\tempsound.wav"):
+                os.remove(tempfile.gettempdir()+"\\tempsound.wav")
+
+            
         except:
             pass
         QCoreApplication.exit(0)
@@ -1059,6 +1065,7 @@ class GUI(QMainWindow):
         elif self.stepNow == 6:
             if (self.isOnBoard):
                 SentTheImages = True
+                QThread.msleep(1000)
                 while SentTheImages:
                     headers = {'authorization': "Bearer "+str(self.token)}
                     if len(self.AllImagesFaces) > 0 and len(self.AllImagesHand) > 0 and len(self.AllImagesId) > 0 :
@@ -1487,12 +1494,7 @@ class AudioRecorder():
             self.audio.terminate()
             
             print("Finished")
-            waveFile = wave.open(self.audio_filename, 'wb')
-            waveFile.setnchannels(self.channels)
-            waveFile.setsampwidth(self.audio.get_sample_size(self.format))
-            waveFile.setframerate(self.rate)
-            waveFile.writeframes(b''.join(self.audio_frames))
-            waveFile.close()
+            
 
     
 
@@ -1529,7 +1531,7 @@ class ThreadUploadFileCamera(QThread):
         cmd = '"'+dir_path+'\\ffmpeg.exe" -y -ac 2 -channel_layout stereo -i "'+self.th.PathOfFile+'" -i "'+self.th.filenameWav+'" -c:v copy -c:a aac -map 0:v:0 -map 1:a:0 "' +self.th.PathOfFileUploaded+'"'
         subprocess.call(cmd, shell=True)
 
-        chunksize = 10000
+        chunksize = 1000000
         totalsize = os.path.getsize(self.filename)
         totalChucks = math.ceil(totalsize/chunksize)
         readsofar = 0
@@ -1612,7 +1614,7 @@ class ThreadUploadFileScreen(QThread):
         self.token = token
 
     def upload_fileScreen(self):
-        chunksize = 10000
+        chunksize = 1000000
         totalsize = os.path.getsize(self.filename)
         totalChucks = math.ceil(totalsize/chunksize)
         readsofar = 0
@@ -1733,7 +1735,7 @@ class ThreadUploadFileScreen(QThread):
         self.token = token
 
     def upload_fileScreen(self):
-        chunksize = 10000
+        chunksize = 1000000
         totalsize = os.path.getsize(self.filename)
         totalChucks = math.ceil(totalsize/chunksize)
         readsofar = 0
@@ -2696,6 +2698,19 @@ class ThreadCameraVideo(QThread):
         count = 0
         self.frame_counts = 1
         self.start_time = time.time()
+        audio_frames = []
+        if (self.audio_thread.open == True):
+            try:
+                self.lastdata = self.audio_thread.stream.read(self.audio_thread.frames_per_buffer, exception_on_overflow = False) 
+            except:
+                self.lastdata = []
+            audio_frames.append(self.lastdata)
+            waveFile = wave.open(self.filenameWav, 'wb')
+            waveFile.setnchannels(self.audio_thread.channels)
+            waveFile.setsampwidth(self.audio_thread.audio.get_sample_size(self.audio_thread.format))
+            waveFile.setframerate(self.audio_thread.rate)
+            waveFile.writeframes(b''.join(audio_frames))
+            waveFile.close()
         while self.ThreadCameraVideoIsRun:
             
             imgScreen = pyautogui.screenshot()
@@ -2736,9 +2751,28 @@ class ThreadCameraVideo(QThread):
                 # height = self.cap.get(cv2.cv.CV_CAP_PROP_FRAME_HEIGHT) # float
                 dim = (250, 250)
                 frame = cv2.resize(frame, dim) 
+                audio_frames = []
                 if (self.audio_thread.open == True):
-                    data = self.audio_thread.stream.read(self.audio_thread.frames_per_buffer, exception_on_overflow = False) 
-                    self.audio_thread.audio_frames.append(data)
+                    try:
+                        data = self.audio_thread.stream.read(self.audio_thread.frames_per_buffer, exception_on_overflow = False) 
+                        self.lastdata = data
+                    except:
+                        pass
+                    audio_frames.append(self.lastdata)
+                    
+                    waveFile = wave.open(tempfile.gettempdir()+"\\tempsound.wav", 'wb')
+                    waveFile.setnchannels(self.audio_thread.channels)
+                    waveFile.setsampwidth(self.audio_thread.audio.get_sample_size(self.audio_thread.format))
+                    waveFile.setframerate(self.audio_thread.rate)
+                    waveFile.writeframes(b''.join(audio_frames))
+                    waveFile.close()
+
+                    sound1 = AudioSegment.from_wav(self.filenameWav)
+                    sound2 = AudioSegment.from_wav(tempfile.gettempdir()+"\\tempsound.wav")
+
+                    combined_sounds = sound1 + sound2
+                    # print(len(combined_sounds)) 
+                    combined_sounds.export(self.filenameWav, format="wav")
                     if not self.audio_thread.open:
                         break
                 self.out.write(frame)
