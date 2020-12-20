@@ -1291,7 +1291,7 @@ qproperty-alignment: AlignCenter;
       <property name="geometry">
        <rect>
         <x>510</x>
-        <y>200</y>
+        <y>220</y>
         <width>60</width>
         <height>60</height>
        </rect>
@@ -1341,7 +1341,7 @@ qproperty-alignment: AlignCenter;
        <property name="geometry">
         <rect>
          <x>100</x>
-         <y>0</y>
+         <y>-10</y>
          <width>611</width>
          <height>351</height>
         </rect>
@@ -1371,7 +1371,7 @@ qproperty-alignment: AlignCenter;
        <property name="geometry">
         <rect>
          <x>260</x>
-         <y>10</y>
+         <y>0</y>
          <width>311</width>
          <height>301</height>
         </rect>
@@ -1415,7 +1415,7 @@ qproperty-alignment: AlignCenter;
       <widget class="QPushButton" name="repeatButton">
        <property name="geometry">
         <rect>
-         <x>540</x>
+         <x>550</x>
          <y>40</y>
          <width>41</width>
          <height>41</height>

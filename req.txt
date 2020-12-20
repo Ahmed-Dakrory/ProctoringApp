@@ -8,12 +8,14 @@ astunparse==1.6.3
 async-generator==1.10
 attrs==20.2.0
 backcall==0.2.0
+bidict==0.21.2
 bleach==1.5.0
 cached-property==1.5.2
 cachetools==4.1.1
 certifi==2020.6.20
 cffi==1.14.2
 chardet==3.0.4
+click==7.1.2
 colorama==0.4.3
 cycler==0.10.0
 Cython==0.29.21
@@ -26,6 +28,8 @@ entrypoints==0.3
 eventlet==0.29.1
 fbs==0.9.0
 ffmpeg-python==0.2.0
+Flask==1.1.2
+Flask-SocketIO==4.3.2
 future==0.18.2
 gast==0.3.3
 google-auth==1.23.0
@@ -45,6 +49,7 @@ ipython==7.16.1
 ipython-genutils==0.2.0
 ipywidgets==7.5.1
 isort==4.3.21
+itsdangerous==1.1.0
 jedi==0.17.2
 Jinja2==2.11.2
 joblib==0.17.0
@@ -96,6 +101,7 @@ pyasn1-modules==0.2.8
 PyAudio==0.2.11
 PyAutoGUI==0.9.52
 pycparser==2.20
+pydub==0.24.1
 pyee==7.0.4
 pygame==2.0.0
 PyGetWindow==0.0.9
@@ -117,8 +123,7 @@ pyrsistent==0.17.3
 PyScreeze==0.1.26
 pyserial==3.4
 python-dateutil==2.8.1
-python-engineio==3.13.2
-python-socketio==4.6.0
+python-engineio==3.14.2
 PyTweening==1.0.3
 pytz==2020.1
 pywin32==228
@@ -138,6 +143,10 @@ shellescape==3.8.1
 sip==4.19.8
 six==1.15.0
 sklearn==0.0
+socketIO-client==0.7.2
+socketIO-client-2==0.7.5
+sounddevice==0.4.1
+SoundFile==0.10.3.post1
 sqlparse==0.3.1
 tensorboard==2.2.2
 tensorboard-plugin-wit==1.7.0
@@ -158,7 +167,7 @@ utm==0.5.0
 VideoCapture==0.9.5
 wcwidth==0.2.5
 webencodings==0.5.1
-websocket-client==0.57.0
+websocket-client==0.37.0
 websockets==8.1
 Werkzeug==1.0.1
 widgetsnbextension==3.5.1

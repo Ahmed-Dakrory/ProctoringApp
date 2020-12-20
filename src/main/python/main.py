@@ -1,5 +1,6 @@
 # python -m fbs freeze --debug
 # fbs freeze
+# python 3.6.3
 from fbs_runtime.application_context.PyQt5 import ApplicationContext
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
@@ -18,6 +19,7 @@ import requests
 import base64
 import random
 import json
+from socketIO_client import SocketIO, BaseNamespace
 
 import threading
 import time
@@ -40,7 +42,8 @@ import urllib
 import ctypes
 from ctypes import *
 import socket
-
+import urllib3
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 kernel32 = ctypes.WinDLL('kernel32')
 user32 = ctypes.WinDLL('user32')
@@ -72,11 +75,12 @@ for proc in psutil.process_iter():
 CNN_INPUT_SIZE = 128
 ANGLE_THRESHOLD = 0.15
 IMAGE_PER_POSE=10
-IMAGE_PER_PIC=150 # here number of images for id and hand
+IMAGE_PER_PIC=50 # here number of images for id and hand
 FACE_WIDTH = 160
 
 
-
+ES_CONTINUOUS = 0x80000000
+ES_SYSTEM_REQUIRED = 0x00000001
 
 
 # if __file__:
@@ -561,19 +565,38 @@ keyboard.add_hotkey("alt + f4", lambda: None, suppress =True)
 keyboard.add_hotkey("ctrl + c", lambda: None, suppress =True)
 keyboard.add_hotkey("shift + f10", lambda: None, suppress =True)
 keyboard.add_hotkey("PrtScn", lambda: None, suppress =True)
+keyboard.add_hotkey("alt + PrtScn", lambda: None, suppress =True)
+keyboard.add_hotkey("ctrl + PrtScn", lambda: None, suppress =True)
+keyboard.add_hotkey("ctrl + p", lambda: None, suppress =True)
 
 
 
+
+class ChatNamespace(BaseNamespace):
+
+    def on_connect(self):
+        print('connect')
+
+    def on_disconnect(self):
+        print('disconnect')
+
+    def on_reconnect():
+        print('reconnect')
 
 
 class GUI(QMainWindow):
     def __init__(self,appctxt):
+
         
         self.dir_path = dir_path
             # self.dir_path =os.path.dirname(os.path.realpath(__file__))
         # self.dir_path = sys.argv[1:][0] #os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
         super(GUI,self).__init__()
         
+        ctypes.windll.kernel32.SetThreadExecutionState(
+                ES_CONTINUOUS | \
+                ES_SYSTEM_REQUIRED)
+
         uic.loadUi(self.dir_path+'\main.ui', self) # Load the .ui file
         self.setWindowFlags(Qt.WindowStaysOnTopHint | Qt.FramelessWindowHint)
         self.GUIPanel = self
@@ -651,7 +674,13 @@ class GUI(QMainWindow):
         self.goNextStep(True)
         self.exit_code = self.appctxt.app.exec_()      # 2. Invoke appctxt.app.exec_()
         
+    def waitmainSocket(self):
+        self.socketIO.wait()
 
+    def closeAllFromSocket(self,data):
+        print("Data")
+        print(data)
+        self.EndTheExam()
 
     def on_click(self,x, y, button, pressed):
         print('{0} at {1}'.format(
@@ -678,46 +707,13 @@ class GUI(QMainWindow):
             print('Error')
 
     def OpenLoaderUpload(self):
-        self.hide()
-        sizeObject = QDesktopWidget().screenGeometry(-1)
-        self.LoaderUpload = self
-        uic.loadUi(self.dir_path+'\progressUploading.ui', self.LoaderUpload) # Load the .ui file
-
-        self.LoaderUpload.setAttribute(Qt.WA_TranslucentBackground)
-        self.LoaderUpload.setWindowFlags(Qt.FramelessWindowHint )
-        
-        self.LoaderUpload.setFixedWidth(1047)
-
-        self.LoaderUpload.show()
 
         
-        # sizeObject = QDesktopWidget().screenGeometry(-1)
-        # self.LoaderUpload.move(sizeObject.width(),sizeObject.height())
-
-        self.centerWidgetOnScreen(self.LoaderUpload)
-        
-        self.LoaderUpload.predictButton.clicked.connect(self.close)
-        self.LoaderUpload.username.setText('hi, '+self.Username)
-        self.LoaderUpload.testname_label.setText(self.TestName)
-        self.LoaderUpload.testduration_label.setText((self.TestDuration) )
-        self.LoaderUpload.predictButton.setStyleSheet("""QPushButton{background-color: rgb(190, 188, 188);
-        border-style: outset;
-        border-width: 1px;
-        border-radius: 5px;
-        border-color: #e8e8e8;
-        padding: 4px;
-        color: #fbfbfb;
-        font-size: 15px;
-        font-weight: 700;}""")
-        self.LoaderUpload.predictButton.setEnabled(False)
-
-
-        
-        
-        #########################################################
+        print('------------------oldkmlkmlk--------------')
         self.thUploadFileCamera = ThreadUploadFileCamera(self,self.th.PathOfFileUploaded,self.IdFromUploadedImages,self.token,self.th)
         self.thUploadFileCamera.changePercentage.connect(self.progressBarValue)
         self.thUploadFileCamera.changeLabel.connect(self.setVideoUploadingLabelProgress)
+        self.thUploadFileCamera.startMain.connect(self.openLoader)
         self.thUploadFileCamera.uploadScreen.connect(self.uploadScreenRun)
         self.thUploadFileCamera.start()
         
@@ -760,7 +756,50 @@ class GUI(QMainWindow):
         self.thUploadFileScreen.finishUploading.connect(self.afterUploadingStep)
         self.thUploadFileScreen.start()
 
+    @pyqtSlot(str)
+    def openLoader(self,text):
+        print('------------------old--------------')
+        self.hide()
+        sizeObject = QDesktopWidget().screenGeometry(-1)
+        self.LoaderUpload = self
+        uic.loadUi(self.dir_path+'\progressUploading.ui', self.LoaderUpload) # Load the .ui file
+        
+        print('------------------doit--------------')
+        self.LoaderUpload.setAttribute(Qt.WA_TranslucentBackground)
+        self.LoaderUpload.setWindowFlags(Qt.FramelessWindowHint )
+        
+        self.LoaderUpload.setFixedWidth(1047)
 
+        self.LoaderUpload.show()
+        
+        print('------------------new--------------')
+        
+       
+        self.centerWidgetOnScreen(self.LoaderUpload)
+        
+        print('------------------new--------------')
+        self.LoaderUpload.predictButton.clicked.connect(self.close)
+        self.LoaderUpload.username.setText('hi, '+self.Username)
+        self.LoaderUpload.testname_label.setText(self.TestName)
+        print('------------------new33--------------')
+        self.LoaderUpload.testduration_label.setText((self.TestDuration) )
+        self.LoaderUpload.predictButton.setStyleSheet("""QPushButton{background-color: rgb(190, 188, 188);
+        border-style: outset;
+        border-width: 1px;
+        border-radius: 5px;
+        border-color: #e8e8e8;
+        padding: 4px;
+        color: #fbfbfb;
+        font-size: 15px;
+        font-weight: 700;}""")
+        self.LoaderUpload.predictButton.setEnabled(False)
+
+
+        print('------------------new-555-------------')
+        
+        
+        #########################################################
+        
     @pyqtSlot(str)
     def setVideoUploadingLabelProgress(self,text):
         self.labelUploading.setText(text)
@@ -839,54 +878,28 @@ class GUI(QMainWindow):
         return fmt.format(**d)
         
     def EndTheExam(self):
-        keyboard.unhook_all_hotkeys()
+        try:
+            keyboard.unhook_all_hotkeys()
+            ctypes.windll.kernel32.SetThreadExecutionState(ES_CONTINUOUS)
+            self.thMouse.threadMouseRun =False
+            
+            self.th.ThreadCameraVideoIsRun = False
+            self.th.cap.release()
+            self.th.out.release()
+            self.th.outScreen.release()
+            self.th.audio_thread.stop()
+
+
+            self.thCloseAppsThreadRunning=False
+            try:
+                self.chat_namespace.emit('ProctorEndExam',{'Ahmed': 'yyy'})
+            except:
+                pass
+            self.OpenLoaderUpload()
+            
+        except:
+            self.close()
         
-        self.thMouse.threadMouseRun =False
-        
-        self.th.ThreadCameraVideoIsRun = False
-        self.th.cap.release()
-        self.th.out.release()
-        self.th.outScreen.release()
-        self.th.audio_thread.stop()
-
-        # elapsed_time = time.time() - self.th.start_time
-        # frame_counts = self.th.frame_counts
-        # recorded_fps = frame_counts / elapsed_time
-        
-        # audioCommand = subprocess.Popen('"'+dir_path+'\\ffprobe" -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "'+self.th.filenameWav+'"', shell=False, stdout=subprocess.PIPE)
-        # subprocess_return = audioCommand.stdout.read()
-
-        # timeOfAudio = str(subprocess_return)[2:len(str(subprocess_return))-5]
-
-        # videoCommand = subprocess.Popen('"'+dir_path+'\\ffprobe" -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "'+self.th.PathOfFile+'"', shell=False, stdout=subprocess.PIPE)
-        # subprocess_return = videoCommand.stdout.read()
-
-        # timeOfVideo = str(subprocess_return)[2:len(str(subprocess_return))-5]
-
-        
-        # timescale = 1 #float(15)/float(recorded_fps)
-        # timescale = float(timeOfAudio)/float(timeOfVideo)
-        # cmd = '"'+dir_path+'\\ffmpeg.exe" -y -i "'+self.th.PathOfFile+'" -i "'+self.th.filenameWav+'" -filter_complex "[0:v]setpts=PTS*0.99*'+timeOfAudio+'/'+timeOfVideo+'[v]" -map "[v]" -map 1:a -shortest -vcodec libvpx-vp9 "' +self.th.PathOfFileUploaded+'"'
-        # t = datetime.datetime.now()
-        # dateRand = (t-datetime.datetime(1970,1,1)).total_seconds()
-        # newName =  int(math.floor(random.randint(33333, 999999)) + dateRand)
-        
-        # tempFile = str(newName)+'.mp4'
-        # cmd = '"'+dir_path+'\\ffmpeg.exe" -itsscale '+str(timescale)+' -i "'+self.th.PathOfFile+'" -codec copy "'+tempfile.gettempdir()+"\\"+tempFile+'"'
-        # subprocess.call(cmd, shell=True)
-
-        # print("Muxing")
-        # cmd = '"'+dir_path+'\\ffmpeg.exe" -y -ac 2 -channel_layout stereo -i "'+self.th.PathOfFile+'" -i "'+self.th.filenameWav+'" -c:v copy -c:a aac -map 0:v:0 -map 1:a:0 "' +self.th.PathOfFileUploaded+'"'
-        # subprocess.call(cmd, shell=True)
-
-        
-        # if os.path.exists(tempfile.gettempdir()+"\\"+tempFile):
-        #     os.remove(tempfile.gettempdir()+"\\"+tempFile)
-
-        self.thCloseAppsThreadRunning=False
-        self.OpenLoaderUpload()
-        
-        # QCoreApplication.exit(0)
 
     def getUnique(self,fileSize):
         t = datetime.datetime.now()
@@ -944,6 +957,12 @@ class GUI(QMainWindow):
             
         except:
             pass
+        try:
+            self.chat_namespace.emit('ProctorEndExam',{'Ahmed': 'yyy'})
+            self.socketIO.disconnect()
+        except:
+            pass
+
         QCoreApplication.exit(0)
     
 
@@ -1089,6 +1108,22 @@ class GUI(QMainWindow):
                     except:
                         print('---------------------------------------------')
                         print(response.text)
+            else:
+                SentTheImages = True
+                QThread.msleep(1000)
+                while SentTheImages:
+                    headers = {'authorization': "Bearer "+str(self.token)}
+                    
+                    dataNew = {"faceImages":self.AllImagesFaces,"TestId":self.examId}
+                    print(dataNew)
+                    UrlPostData = 'http://34.245.70.4:3001/api/user/proctoring-images'
+                    response = requests.post(UrlPostData,json=dataNew,headers=headers)
+                    try:
+                        self.IdFromUploadedImages = response.json()['userTestTrial']['id']
+                        SentTheImages = False
+                    except:
+                        print('---------------------------------------------')
+                        print(response.text)
             
             self.stepNow +=1
             self.goNextStep(False)
@@ -1156,18 +1191,37 @@ class GUI(QMainWindow):
             self.Username = response.json()['user']['firstName']
             self.IsVerified = response.json()['user']['active']
             self.studentId = response.json()['user']['UserId']
-            
+            self.roomId = response.json()['user']['id']
+            print("------------------------------------------------")
+            print(self.studentId)
+            self.socketIO = SocketIO('http://34.245.70.4', 3001,ChatNamespace,params={'id': str(self.roomId)})
+            self.chat_namespace = self.socketIO.define(ChatNamespace, '/room')
+            self.chat_namespace.on('EndExam', self.closeAllFromSocket)
+
+
+            socketMainThread = threading.Thread(target=self.waitmainSocket, args=())
+            socketMainThread.start()
+
             headers = {'authorization': "Bearer "+str(self.token)}
             dataNew = {"token": self.token}
             UrlPostData = 'http://34.245.70.4:3001/api/test/test-requirements/'+self.examId
             response = requests.get(UrlPostData,json=dataNew,headers=headers)
             
             print("-----------Request--------------")
+            # print(response.json())
             self.TestName = response.json()['test']['name']
             self.isOnBoard = response.json()['test']['onboardingTest']
             # self.isOnBoard = False
             self.TestDuration = str(response.json()['test']['duration']) +' m'
             self.AllNotAllowed = response.json()['testWhiteListApps']
+            print('----------------------------------------------')
+            print('----------------------------------------------')
+            print('----------------------------------------------')
+            print(self.AllNotAllowed)
+            print('----------------------------------------------')
+            print('----------------------------------------------')
+            print('----------------------------------------------')
+
             listAllow = list(['Taskmgr.exe','ClearPassOnGuard.exe','SettingSyncHost.exe','MsMpEng.exe','SASrv.exe','unsecapp.exe','AGMService.exe',
                             'AGSService.exe','CAudioFilterAgent64.exe','igfxHK.exe','sihost.exe','SecurityHealthSystray.exe',
                             'SearchFilterHost.exe','WmiPrvSE.exe','fbs.exe','RtkBtManServ.exe','ETDService.exe'
@@ -1314,7 +1368,7 @@ class GUI(QMainWindow):
         qp = QPainter(output)
         qp.setBrush(QBrush(source))
         qp.setPen(Qt.NoPen)
-        qp.drawRoundedRect(output.rect(), 70, 70)
+        qp.drawRoundedRect(output.rect(), 150, 150)
         qp.end()
         self.cameraHolder.setPixmap(output)
 
@@ -1500,11 +1554,13 @@ class AudioRecorder():
 
 
 
+
 # Uploading Camera File 
 class ThreadUploadFileCamera(QThread):
     # Create the signal
     changePercentage = pyqtSignal(int)
     changeLabel =pyqtSignal(str)
+    startMain = pyqtSignal(str)
     uploadScreen =pyqtSignal()
 
     
@@ -1521,6 +1577,9 @@ class ThreadUploadFileCamera(QThread):
         self.ThreadUploadingFiles = True
         self.token = token
         self.th = th
+        self.window = window
+
+
         
 
     def upload_fileCamera(self):
@@ -1585,6 +1644,9 @@ class ThreadUploadFileCamera(QThread):
         self.uploadScreen.emit()
 
     def run(self):
+        
+        self.startMain.emit("Start")
+        QThread.msleep(2000)
         self.upload_fileCamera()
 
 
@@ -1984,7 +2046,27 @@ class ThreadCameraRecognition(QThread):
         self.AllImages = AllImages
         self.studentId = studentId
 
+    def sendImage(self,files,headers):
+        try:
+            response = requests.post('http://34.245.70.4:3001/api/upload/files',files = files,headers=headers,timeout = 3)
+            self.AllImages.append(response.json()['files'][0]['name'])
+            # print(response.json()['files'][0]['name'])
+        except:
+            pass
+        self.FinalImage -= 1
 
+    def saveImage(self,direction,count,image):
+        
+        # if count == IMAGE_PER_POSE:
+        dimOld = (160, 160)
+        image = cv2.resize(image, dimOld, interpolation = cv2.INTER_AREA)
+        # Save the image to the server with this id
+        imencoded = cv2.imencode('.jpg', image)[1]
+        fileName = str(direction)+'image.jpg'
+        files = {'files': (fileName, imencoded.tostring(), 'image/jpeg', {'Expires': '0'})}
+        headers = {'authorization': "Bearer "+str(self.token)}
+        sendThread = threading.Thread(target=self.sendImage, args=(files,headers,))
+        sendThread.start()
         
 
 
@@ -2122,13 +2204,16 @@ class ThreadCameraRecognition(QThread):
                             print(response.text)
                             print(response.json()['state'])
                             if response.json()['state'] == 'findFace' and str(self.studentId) == response.json()['personId']:
-                                pose_index = 1
+                                pose_index = 0
                                 self.setPose.emit('Thank you')
                                 cap.release()
+
+                                self.saveImage(poses[pose_index],images_saved_per_pose,face)
                                 self.setPose.emit('Verified')
                                 self.checkingEnded.emit(True)
                                 break
-                        except:
+                        except Exception as ex:
+                            print(ex)
                             cap.release()
                             self.recognitionFailCamera.emit('There is a problem in the server')
                             break
@@ -2257,7 +2342,7 @@ class ThreadCamera(QThread):
             # frame =frame[int(height/4):int(3/4*height),int(width/3):int(2/3*width)]
             frame_for_cam =frame_for_cam[int(0):int(7/8*height),int(width/5):int(4/5*width)]
             
-            scale_percent = 55 # percent of original size
+            scale_percent = 59 # percent of original size
             widthNew = int(frame_for_cam.shape[1] * scale_percent / 100)
             heightNew = int(frame_for_cam.shape[0] * scale_percent / 100)
             dimOld = (widthNew, heightNew)
@@ -2464,7 +2549,7 @@ class ThreadCameraHand(QThread):
             # frame_for_cam =frame_for_cam[int(0):int(7/8*height),int(width/5):int(4/5*width)]
             # frame_for_cam =frame_for_cam[int(0):int(height),0:width]
             
-            scale_percent = 59 # percent of original size
+            scale_percent = 55 # percent of original size
             widthNew = int(frame_for_cam.shape[1] * scale_percent / 100)
             heightNew = int(frame_for_cam.shape[0] * scale_percent / 100)
             dimOld = (widthNew, heightNew)
@@ -2674,7 +2759,7 @@ class ThreadCameraVideo(QThread):
         fourcc = cv2.VideoWriter_fourcc(*'H264')
        
         if int(self.cap.get(cv2.CAP_PROP_FPS)) == 0:
-            self.fps = 15
+            self.fps = 13
         else:
             self.fps = int(self.cap.get(cv2.CAP_PROP_FPS))*0.5
         print("--------------------------------------")
@@ -2736,8 +2821,12 @@ class ThreadCameraVideo(QThread):
                     
                 
                     fm2=np.mean(sample_frame)
+                    # print(fm2)
                     if fm2 < Dark_Threshold:
                         self.textLight = "Room too dark"
+                        self.changeStrLight.emit(self.textLight)
+                    elif fm2 > Dark_Threshold+50:
+                        self.textLight="Low the light"
                         self.changeStrLight.emit(self.textLight)
                     else:
                         self.textLight=""
@@ -2838,7 +2927,7 @@ if __name__ == '__main__':
     set_reg(r"Software\\Classes\\Proctoring\\Shell\\Open\\command",'', '\"'+dir_path+'\\Proctoring.exe\"  "%0" "%1" "%2')
     
     runTheApp = False
-    # token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NCwiaXNzIjoiQXBwIiwiaWF0IjoxNjA0NTE0NDUyODUzLCJleHAiOjE2MDQ1MTcwNDQ4NTN9._RWMR0eEkecD8HqEjaDAdWLVNpUq2avg1iG6wu9-yis' #None
+    # token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NCwiaXNzIjoiQXBwIiwiaWF0IjoxNjA4MTA5ODY5NDM0LCJleHAiOjE2MDgxMTI0NjE0MzR9.cOIOxgC2GDvSWttPSC37faKfTuFLpmVkOdJTWZQJKVw' #None
     # examId = 'dc5ab342f6a0d3e488bb5d7be33c921c'
     try:
         argumentData = sys.argv[1]
