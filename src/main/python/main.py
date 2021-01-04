@@ -57,7 +57,7 @@ import tensorflow as tf
 
 import dlib
 from imutils import face_utils
-import keyboard
+from pynput import keyboard,mouse
 
 
 
@@ -561,13 +561,13 @@ class MarkDetector:
                 mark[1])), 1, color, -1, cv2.LINE_AA)
 
 
-keyboard.add_hotkey("alt + f4", lambda: None, suppress =True)
-keyboard.add_hotkey("ctrl + c", lambda: None, suppress =True)
-keyboard.add_hotkey("shift + f10", lambda: None, suppress =True)
-keyboard.add_hotkey("PrtScn", lambda: None, suppress =True)
-keyboard.add_hotkey("alt + PrtScn", lambda: None, suppress =True)
-keyboard.add_hotkey("ctrl + PrtScn", lambda: None, suppress =True)
-keyboard.add_hotkey("ctrl + p", lambda: None, suppress =True)
+# keyboard.add_hotkey("alt + f4", lambda: None, suppress =True)
+# keyboard.add_hotkey("shift + f10", lambda: None, suppress =True)
+# keyboard.add_hotkey("ctrl + c", lambda: None, suppress =True)
+# keyboard.add_hotkey("PrtScn", lambda: None, suppress =True)
+# keyboard.add_hotkey("alt + PrtScn", lambda: None, suppress =True)
+# keyboard.add_hotkey("ctrl + PrtScn", lambda: None, suppress =True)
+# keyboard.add_hotkey("ctrl + p", lambda: None, suppress =True)
 
 
 
@@ -588,6 +588,7 @@ class GUI(QMainWindow):
     def __init__(self,appctxt):
 
         
+
         self.dir_path = dir_path
             # self.dir_path =os.path.dirname(os.path.realpath(__file__))
         # self.dir_path = sys.argv[1:][0] #os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
@@ -606,7 +607,7 @@ class GUI(QMainWindow):
         self.token = token
         self.IdFromUploadedImages=None
         self.Username = ''
-        self.IsVerified = None
+        # self.IsVerified = None
         self.examId = examId
         self.AllImagesFaces = []
         self.AllImagesHand = []
@@ -665,15 +666,16 @@ class GUI(QMainWindow):
 
 
 
-        self.thMouse = ThreadMouse(self)
-        self.thMouse.start()
-
-
+        self.thControllersStop = ThreadMouse(self)
+        self.thControllersStop.start()
         
+
+
         self.show()
         self.goNextStep(True)
         self.exit_code = self.appctxt.app.exec_()      # 2. Invoke appctxt.app.exec_()
-        
+
+   
     def waitmainSocket(self):
         self.socketIO.wait()
 
@@ -695,7 +697,7 @@ class GUI(QMainWindow):
         
         headers = {'authorization': "Bearer "+str(self.token)}
         dataNew = {"status": True}
-        UrlPostData = 'http://34.245.70.4:3001/api/test/allow-test-student/'+self.examId
+        UrlPostData = 'http://new.tproctor.teqnia-tech.com/api/proctor-app/allow-test-student/'+self.examId
         response = requests.put(UrlPostData,json=dataNew,headers=headers,timeout=1)
         self.message = response.json()['message']
         print(self.message)
@@ -879,9 +881,11 @@ class GUI(QMainWindow):
         
     def EndTheExam(self):
         try:
-            keyboard.unhook_all_hotkeys()
+            # keyboard.unhook_all_hotkeys()
             ctypes.windll.kernel32.SetThreadExecutionState(ES_CONTINUOUS)
-            self.thMouse.threadMouseRun =False
+            
+            self.thControllersStop.listenerKeyBoard.stop()
+            self.thControllersStop.listenerMouse.stop()
             
             self.th.ThreadCameraVideoIsRun = False
             self.th.cap.release()
@@ -932,7 +936,9 @@ class GUI(QMainWindow):
     def close(self):
         try:
             
-            self.thMouse.threadMouseRun = False
+            self.thControllersStop.listenerKeyBoard.stop()
+            self.thControllersStop.listenerMouse.stop()
+
             self.thUploadFileCamera.ThreadUploadingFiles = False
             self.thUploadFileScreen.ThreadUploadingFiles = False
             
@@ -1090,20 +1096,20 @@ class GUI(QMainWindow):
                     if len(self.AllImagesFaces) > 0 and len(self.AllImagesHand) > 0 and len(self.AllImagesId) > 0 :
                         dataNew = {"faceImages":self.AllImagesFaces,
                                     "knuckleImages":self.AllImagesHand,
-                                    "idImages":self.AllImagesId,"TestId":self.examId}
+                                    "idImages":self.AllImagesId,"trial":self.examId}
                     elif len(self.AllImagesFaces) > 0 and len(self.AllImagesId) > 0 :
                         dataNew = {"faceImages":self.AllImagesFaces,
-                                    "idImages":self.AllImagesId,"TestId":self.examId}
+                                    "idImages":self.AllImagesId,"trial":self.examId}
                     elif len(self.AllImagesFaces) > 0 and len(self.AllImagesHand) > 0 :
                         dataNew = {"faceImages":self.AllImagesFaces,
-                                    "knuckleImages":self.AllImagesHand,"TestId":self.examId}
+                                    "knuckleImages":self.AllImagesHand,"trial":self.examId}
                     else  :
-                        dataNew = {"faceImages":self.AllImagesFaces,"TestId":self.examId}
-                    print(dataNew)
-                    UrlPostData = 'http://34.245.70.4:3001/api/user/proctoring-images'
+                        dataNew = {"faceImages":self.AllImagesFaces,"trial":self.examId}
+                    # print(dataNew)
+                    UrlPostData = 'http://new.tproctor.teqnia-tech.com/api/proctor-app/proctoring-image'
                     response = requests.post(UrlPostData,json=dataNew,headers=headers)
                     try:
-                        self.IdFromUploadedImages = response.json()['userTestTrial']['id']
+                        self.IdFromUploadedImages =self.examId# response.json()['userTestTrial']['id']
                         SentTheImages = False
                     except:
                         print('---------------------------------------------')
@@ -1114,12 +1120,12 @@ class GUI(QMainWindow):
                 while SentTheImages:
                     headers = {'authorization': "Bearer "+str(self.token)}
                     
-                    dataNew = {"faceImages":self.AllImagesFaces,"TestId":self.examId}
+                    dataNew = {"faceImages":self.AllImagesFaces,"trial":self.examId}
                     print(dataNew)
-                    UrlPostData = 'http://34.245.70.4:3001/api/user/proctoring-images'
+                    UrlPostData = 'http://new.tproctor.teqnia-tech.com/api/proctor-app/proctoring-images'
                     response = requests.post(UrlPostData,json=dataNew,headers=headers)
                     try:
-                        self.IdFromUploadedImages = response.json()['userTestTrial']['id']
+                        self.IdFromUploadedImages = self.examId# response.json()['userTestTrial']['id']
                         SentTheImages = False
                     except:
                         print('---------------------------------------------')
@@ -1182,29 +1188,32 @@ class GUI(QMainWindow):
                 
 
         dataNew = {"token": self.token}
-        UrlPostData = 'http://34.245.70.4:3001/api/user/me'
+        headers = {'authorization': "Bearer "+str(self.token)}
+        UrlPostData = 'http://new.tproctor.teqnia-tech.com/api/proctor-app/me'
         self.TestDurationInt = '0'
         
         print("----------------------------------")
         if self.token != None and self.examId!=None:
-            response = requests.post(UrlPostData,json=dataNew)
-            self.Username = response.json()['user']['firstName']
-            self.IsVerified = response.json()['user']['active']
-            self.studentId = response.json()['user']['UserId']
-            self.roomId = response.json()['user']['id']
+            response = requests.get(UrlPostData,headers=headers)
+            print(response.json())
+            self.Username = response.json()['name']
+            # self.IsVerified = response.json()['user']['active']
+            self.studentId = response.json()['id']
+            self.roomId = response.json()['id']
             print("------------------------------------------------")
             print(self.studentId)
-            self.socketIO = SocketIO('http://34.245.70.4', 3001,ChatNamespace,params={'id': str(self.roomId)})
+            self.socketIO = SocketIO('http://new.tproctor.teqnia-tech.com', 80,ChatNamespace,params={'id': str(self.roomId)})
             self.chat_namespace = self.socketIO.define(ChatNamespace, '/room')
             self.chat_namespace.on('EndExam', self.closeAllFromSocket)
 
-
+            print("Socket has been ini")
             socketMainThread = threading.Thread(target=self.waitmainSocket, args=())
             socketMainThread.start()
+            print("Socket has been started")
 
             headers = {'authorization': "Bearer "+str(self.token)}
             dataNew = {"token": self.token}
-            UrlPostData = 'http://34.245.70.4:3001/api/test/test-requirements/'+self.examId
+            UrlPostData = 'http://new.tproctor.teqnia-tech.com/api/proctor-app/test-requirements/'+self.examId
             response = requests.get(UrlPostData,json=dataNew,headers=headers)
             
             print("-----------Request--------------")
@@ -1222,15 +1231,15 @@ class GUI(QMainWindow):
             print('----------------------------------------------')
             print('----------------------------------------------')
 
-            listAllow = list(['Taskmgr.exe','ClearPassOnGuard.exe','SettingSyncHost.exe','MsMpEng.exe','SASrv.exe','unsecapp.exe','AGMService.exe',
-                            'AGSService.exe','CAudioFilterAgent64.exe','igfxHK.exe','sihost.exe','SecurityHealthSystray.exe',
-                            'SearchFilterHost.exe','WmiPrvSE.exe','fbs.exe','RtkBtManServ.exe','ETDService.exe'
-                            'SearchProtocolHost.exe','dllhost.exe','PanGPA.exe','IEMonitor.exe','ETDCtrl.exe',
-                            'ctfmon.exe','cmd.exe','chrome.exe','SearchUI.exe','RuntimeBroker.exe','jucheck.exe',
-                              'ShellExperienceHost.exe','Code.exe','svchost.exe','taskhostw.exe','Video.UI.exe',
-                              'SecurityHealthService.exe','winlogon.exe','sqlwriter.exe','ETDCtrlHelper.exe',
+            listAllow = list(['Taskmgr.exe','ClearPassOnGuard.exe','mysqld.exe','httpd.exe','WindowsInternal.ComposableShell.Experiences.TextInput.InputApp.exe','MiPhoneHelper.exe','igfxEM.exe','YourPhone.exe','LWS.exe','jusched.exe','LockApp.exe','fmapp.exe','OneDrive.exe','SecurityHealthHost.exe','dasHost.exe','mbamtray.exe','CameraHelperShell.exe','Music.UI.exe','ApplicationFrameHost.exe','SettingSyncHost.exe','MsMpEng.exe','SASrv.exe','unsecapp.exe','AGMService.exe',
+                            'AGSService.exe','CAudioFilterAgent64.exe','igfxHK.exe','sihost.exe','SecurityHealthSystray.exe','sqlceip.exe','MicrosoftEdgeUpdate.exe',
+                            'SearchFilterHost.exe','WmiPrvSE.exe','fbs.exe','RtkBtManServ.exe','ETDService.exe','sqlservr.exe','StartMenuExperienceHost.exe','smartscreen.exe',
+                            'SearchProtocolHost.exe','dllhost.exe','PanGPA.exe','IEMonitor.exe','ETDCtrl.exe','spoolsv.exe','MBAMService.exe','arubanetsvc.exe','ETDService.exe','PanGPS.exe','TiWorker.exe','TrustedInstaller.exe',
+                            'ctfmon.exe','cmd.exe','chrome.exe','SearchUI.exe','RuntimeBroker.exe','jucheck.exe','igfxCUIService.exe','SgrmBorker.exe','dwm.exe','audiodg.exe','Isass.exe','ClearPassAgentController.exe',
+                              'ShellExperienceHost.exe','Code.exe','svchost.exe','taskhostw.exe','Video.UI.exe','NVDisplay.Container.exe','MemCompression','smss.exe','fontdrvhost.exe','ClearPassOnGuardAgentService.exe','SgrmBroker.exe',
+                              'SecurityHealthService.exe','winlogon.exe','sqlwriter.exe','ETDCtrlHelper.exe','csrss.exe','wininit.exe','services.exe','lsass.exe','PresentationFontCache.exe','NisSrv.exe','SearchIndexer.exe',
                               'fontdrvhost.exe','backgroundTaskHost.exe','conhost.exe','igfxTray.exe',
-                              'python.exe','explorer.exe','svchost.exe','Proctoring.exe'])
+                              'python.exe','explorer.exe','svchost.exe','Proctoring.exe','System Idle Process','System','Registry','WUDFHost.exe'])
             for item in listAllow:
                 prog = {'deleted': False, 'SystemApp': {'serviceName': item }}
                 self.AllNotAllowed.append(prog)
@@ -1596,7 +1605,7 @@ class ThreadUploadFileCamera(QThread):
         readsofar = 0
         self.IdFromUploadedImages = self.IdFromUploadedImages
         
-        url = "http://34.245.70.4:3001/api/upload/video/"+str(self.IdFromUploadedImages)+"/STUDENT"
+        url = "http://new.tproctor.teqnia-tech.com/api/proctor-app/proctoring-video/"+str(self.IdFromUploadedImages)+"/STUDENT"
         token = self.token
         i = 0
         uniqueId = self.getUnique(totalsize)
@@ -1628,11 +1637,15 @@ class ThreadUploadFileCamera(QThread):
                     files = {'file': ('fileDownload',open(tempfile.gettempdir()+"\\"+"fileDownload", 'rb'),'application/octet-stream')}
                     isUploaded = False
                     while not isUploaded:
+                        # print(self.IdFromUploadedImages)
+                        # print('----------------------------')
                         try:
                             r = requests.request('POST',url,files=files,headers=headers, verify=False)
-                            print(r.text)
-                            isUploaded = True
-                            i+=1
+                            print(r.status_code)
+                            if r.status_code == 204:
+                                print("Done")
+                                isUploaded = True
+                                i+=1
                         except Exception as exc:
                             print(exc)
                     self.changePercentage.emit(int(percent/2))
@@ -1680,7 +1693,7 @@ class ThreadUploadFileScreen(QThread):
         totalsize = os.path.getsize(self.filename)
         totalChucks = math.ceil(totalsize/chunksize)
         readsofar = 0
-        url = "http://34.245.70.4:3001/api/upload/video/"+str(self.IdFromUploadedImages)+"/SCREEN"
+        url = "http://new.tproctor.teqnia-tech.com/api/proctor-app/proctoring-video/"+str(self.IdFromUploadedImages)+"/SCREEN"
         token = self.token
         i = 0
         uniqueId = self.getUnique(totalsize)
@@ -1714,13 +1727,16 @@ class ThreadUploadFileScreen(QThread):
                     while not isUploaded:
                         try:
                             r = requests.request('POST',url,files=files,headers=headers, verify=False)
-                            # print(r.text)
-                            isUploaded = True
-                            i+=1
+                            print(r.status_code)
+                            if r.status_code == 204:
+                                print("Done")
+                                isUploaded = True
+                                i+=1
                         except Exception as exc:
                             print(exc)
                     self.changePercentage.emit(int(percent/2+50))
-                    
+                    print(self.IdFromUploadedImages)
+                    print('----------------------------')
                     self.changeLabel.emit("Screen "+str(int(percent))+"%")
                     print("\r{percent:3.0f}%".format(percent=percent))
                 except:
@@ -1735,122 +1751,77 @@ class ThreadUploadFileScreen(QThread):
 # Internet Connection as it handle Requests
 class ThreadMouse(QThread):
     # Create the signal
+    def on_clickMouse(self,x, y, button, pressed):
+        if button == mouse.Button.right:
+            winput.press_key(winput.VK_ESCAPE)
+            time.sleep(0.1)
+            winput.press_key(winput.VK_ESCAPE)
+            time.sleep(0.001)
+            winput.press_key(winput.VK_ESCAPE)
+            time.sleep(0.3)
+            winput.press_key(winput.VK_ESCAPE)
+
+    def on_pressKeyBoard(self,key):
+        try:
+            # print('alphanumeric key {0} pressed'.format(
+            #     key.char))
+            try:
+                result = subprocess.check_output('cmd /c echo.|clip', shell=True)
+            except:
+                pass
+        except AttributeError:
+            print('special key {0} pressed'.format(
+                key))
+
+
 
     def __init__(self, mw, parent=None):
         super().__init__(parent)
         self.threadMouseRun = True
+        self.listenerKeyBoard = keyboard.Listener(on_press=self.on_pressKeyBoard)
+        self.listenerKeyBoard.start()
+
+        self.listenerMouse = mouse.Listener(on_click=self.on_clickMouse)
+        self.listenerMouse.start()
 
     def run(self):
-        
-        state_left = win32api.GetKeyState(0x01)  # Left button down = 0 or 1. Button up = -127 or -128
-        state_right = win32api.GetKeyState(0x02)  # Right button down = 0 or 1. Button up = -127 or -128
+        print('Thread of Mouse and Keyboard Started')
+        # state_left = win32api.GetKeyState(0x01)  # Left button down = 0 or 1. Button up = -127 or -128
+        # state_right = win32api.GetKeyState(0x02)  # Right button down = 0 or 1. Button up = -127 or -128
 
-        while self.threadMouseRun:
-            b = win32api.GetKeyState(0x02)
-            if b != state_right:  # Button state changed
-                state_right = b
-                if b < 0:
-                    print('Right Button Pressed')
-                    winput.press_key(winput.VK_ESCAPE)
-                    time.sleep(0.1)
-                    winput.press_key(winput.VK_ESCAPE)
-                    time.sleep(0.001)
-                    winput.press_key(winput.VK_ESCAPE)
-                    time.sleep(0.3)
-                    winput.press_key(winput.VK_ESCAPE)
-                else:
-                    print('Right Button Released')
-                    # winput.move_mouse(-10, 1)
+        # while self.threadMouseRun:
+        #     b = win32api.GetKeyState(0x02)
+            
+        #     try:
+        #         result = subprocess.check_output('cmd /c echo.|clip', shell=True)
+        #     except:
+        #         pass
+        #     if b != state_right:  # Button state changed
+        #         state_right = b
+        #         if b < 0:
+        #             print('Right Button Pressed')
+        #             winput.press_key(winput.VK_ESCAPE)
+        #             time.sleep(0.1)
+        #             winput.press_key(winput.VK_ESCAPE)
+        #             time.sleep(0.001)
+        #             winput.press_key(winput.VK_ESCAPE)
+        #             time.sleep(0.3)
+        #             winput.press_key(winput.VK_ESCAPE)
+        #         else:
+        #             print('Right Button Released')
+        #             # winput.move_mouse(-10, 1)
                     
-                    winput.press_key(winput.VK_ESCAPE)
-                    time.sleep(0.1)
-                    winput.press_key(winput.VK_ESCAPE)
-                    time.sleep(0.001)
-                    winput.press_key(winput.VK_ESCAPE)
-                    time.sleep(0.3)
-                    winput.press_key(winput.VK_ESCAPE)
+        #             winput.press_key(winput.VK_ESCAPE)
+        #             time.sleep(0.1)
+        #             winput.press_key(winput.VK_ESCAPE)
+        #             time.sleep(0.001)
+        #             winput.press_key(winput.VK_ESCAPE)
+        #             time.sleep(0.3)
+        #             winput.press_key(winput.VK_ESCAPE)
             
 
 
 
-
-
-# Uploading Camera Screen 
-class ThreadUploadFileScreen(QThread):
-    # Create the signal
-    changePercentage = pyqtSignal(int)
-    changeLabel =pyqtSignal(str)
-    finishUploading =pyqtSignal()
-
-    
-    def getUnique(self,fileSize):
-        t = datetime.datetime.now()
-        dateRand = (t-datetime.datetime(1970,1,1)).total_seconds()
-        return int(math.floor(random.randint(33333, 999999)) + dateRand + fileSize)
-
-    
-    def __init__(self,window,PathOfFileUploaded,IdFromUploadedImages,token):
-        super(ThreadUploadFileScreen,self).__init__(window)
-        self.filename = PathOfFileUploaded
-        self.IdFromUploadedImages = IdFromUploadedImages
-        self.ThreadUploadingFiles = True
-        self.token = token
-
-    def upload_fileScreen(self):
-        chunksize = 1000000
-        totalsize = os.path.getsize(self.filename)
-        totalChucks = math.ceil(totalsize/chunksize)
-        readsofar = 0
-        url = "http://34.245.70.4:3001/api/upload/video/"+str(self.IdFromUploadedImages)+"/SCREEN"
-        token = self.token
-        i = 0
-        uniqueId = self.getUnique(totalsize)
-        with open(self.filename, 'rb') as file:
-            while self.ThreadUploadingFiles:
-                try:
-                    data = file.read(chunksize)
-                    f = open(tempfile.gettempdir()+"\\"+"fileDownload", "wb")
-                    f.write(data)
-                    f.close()
-                    if not data:
-                        sys.stderr.write("\n")
-                        break
-                    readsofar += len(data)
-                    percent = readsofar * 1e2 / totalsize
-                    
-                    headers = {
-                        'Access-Control-Max-Age':'86400',
-                        'Access-Control-Allow-Methods': 'POST,OPTIONS' ,
-                        'Access-Control-Allow-Headers': 'uploader-chunk-number,uploader-chunks-total,uploader-file-id', 
-                        'Access-Control-Allow-Origin':'http://localhost:3000',
-                        'authorization': "Bearer "+token,
-                        'uploader-file-id': str(uniqueId),
-                        'uploader-chunks-total': str(totalChucks),
-                        'uploader-chunk-number': str(i)
-                        }
-
-                
-                    files = {'file': ("fileDownload",open(tempfile.gettempdir()+'\\'+'fileDownload', 'rb'),'application/octet-stream')}
-                    isUploaded = False
-                    while not isUploaded:
-                        try:
-                            r = requests.request('POST',url,files=files,headers=headers, verify=False)
-                            # print(r.text)
-                            isUploaded = True
-                            i+=1
-                        except Exception as exc:
-                            print(exc)
-                    self.changePercentage.emit(int(percent/2+50))
-                    
-                    self.changeLabel.emit("Screen "+str(int(percent))+"%")
-                    print("\r{percent:3.0f}%".format(percent=percent))
-                except:
-                    pass
-        self.finishUploading.emit()
-        
-
-    def run(self):
-        self.upload_fileScreen()
 
 
 # Internet Connection as it handle Requests
@@ -2048,10 +2019,14 @@ class ThreadCameraRecognition(QThread):
 
     def sendImage(self,files,headers):
         try:
-            response = requests.post('http://34.245.70.4:3001/api/upload/files',files = files,headers=headers,timeout = 3)
+            response = requests.post('http://new.tproctor.teqnia-tech.com/api/upload/files',files = files,headers=headers,timeout = 3)
             self.AllImages.append(response.json()['files'][0]['name'])
-            # print(response.json()['files'][0]['name'])
-        except:
+            print(response.json()['files'][0]['name'])
+        except Exception as e:
+            print('---------------------------------------')
+            print('---------------------------------------')
+            print('---------------------------------------')
+            print(e)
             pass
         self.FinalImage -= 1
 
@@ -2267,11 +2242,14 @@ class ThreadCamera(QThread):
         
     def sendImage(self,files,headers):
         try:
-            response = requests.post('http://34.245.70.4:3001/api/upload/files',files = files,headers=headers,timeout = 3)
+            response = requests.post('http://new.tproctor.teqnia-tech.com/api/upload/files',files = files,headers=headers,timeout = 3)
             self.AllImages.append(response.json()['files'][0]['name'])
-            # print(response.json()['files'][0]['name'])
-        except:
-            pass
+            print(response.json()['files'][0]['name'])
+        except Exception as e:
+            print('---------------------------------------')
+            print('---------------------------------------')
+            print('---------------------------------------')
+            print(e)
         self.FinalImage -= 1
         
 
@@ -2483,10 +2461,14 @@ class ThreadCameraHand(QThread):
     def sendImage(self,files,headers):
         try:
             try:
-                response = requests.post('http://34.245.70.4:3001/api/upload/files',files = files,headers=headers,timeout = 3)
+                response = requests.post('http://new.tproctor.teqnia-tech.com/api/upload/files',files = files,headers=headers,timeout = 3)
                 self.AllImagesHand.append(response.json()['files'][0]['name'])
-            except:
-                print('Error upload hand')
+                print(response.json()['files'][0]['name'])
+            except Exception as e:
+                print('---------------------------------------')
+                print('---------------------------------------')
+                print('---------------------------------------')
+                print(e)
             self.checkingEnded.emit(False)
             self.reloadCameraShow.emit(0)
             print('-------------------------------')
@@ -2620,10 +2602,14 @@ class ThreadCameraId(QThread):
     def sendImage(self,files,headers):
         try:
             try:
-                response = requests.post('http://34.245.70.4:3001/api/upload/files',files = files,headers=headers,timeout = 3)
+                response = requests.post('http://new.tproctor.teqnia-tech.com/api/upload/files',files = files,headers=headers,timeout = 3)
                 self.AllImagesId.append(response.json()['files'][0]['name'])
-            except:
-                print('Error upload hand')
+                print(response.json()['files'][0]['name'])
+            except Exception as e:
+                print('---------------------------------------')
+                print('---------------------------------------')
+                print('---------------------------------------')
+                print(e)
             self.checkingEnded.emit(False)
             self.reloadCameraShow.emit(1)
             print('-------------------------------')
@@ -2927,8 +2913,8 @@ if __name__ == '__main__':
     set_reg(r"Software\\Classes\\Proctoring\\Shell\\Open\\command",'', '\"'+dir_path+'\\Proctoring.exe\"  "%0" "%1" "%2')
     
     runTheApp = False
-    # token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NCwiaXNzIjoiQXBwIiwiaWF0IjoxNjA4MTA5ODY5NDM0LCJleHAiOjE2MDgxMTI0NjE0MzR9.cOIOxgC2GDvSWttPSC37faKfTuFLpmVkOdJTWZQJKVw' #None
-    # examId = 'dc5ab342f6a0d3e488bb5d7be33c921c'
+    # token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NywiaXNzIjoiQXBwIiwiaWF0IjoxNjA5NDkxMDA5NTQwLCJleHAiOjE2MDk0OTM2MDE1NDB9.3U59e1CSZ2gaoBQtE4RIYDDLTgX05jMMM8UNqCHtc9o' #None
+    # examId = '43'
     try:
         argumentData = sys.argv[1]
         token = argumentData.split("@/@")[1]
