@@ -1106,7 +1106,7 @@ class GUI(QMainWindow):
                     else  :
                         dataNew = {"faceImages":self.AllImagesFaces,"trial":self.examId}
                     # print(dataNew)
-                    UrlPostData = 'http://new.tproctor.teqnia-tech.com/api/proctor-app/proctoring-image'
+                    UrlPostData = 'http://new.tproctor.teqnia-tech.com/api/proctor-app/proctoring-images'
                     response = requests.post(UrlPostData,json=dataNew,headers=headers)
                     try:
                         self.IdFromUploadedImages =self.examId# response.json()['userTestTrial']['id']
