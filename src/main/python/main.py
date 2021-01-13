@@ -590,8 +590,6 @@ class GUI(QMainWindow):
         
 
         self.dir_path = dir_path
-            # self.dir_path =os.path.dirname(os.path.realpath(__file__))
-        # self.dir_path = sys.argv[1:][0] #os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
         super(GUI,self).__init__()
         
         ctypes.windll.kernel32.SetThreadExecutionState(
@@ -841,7 +839,9 @@ class GUI(QMainWindow):
 
     def OpenCameraApp(self):
         self.thCloseAppsThreadRunning=True
-        self.thCloseApps = threading.Thread(target=self.while_closeAllBlackList, args=())
+        
+
+        self.thCloseApps = ThreadClosingApps(self)
         self.thCloseApps.start()
 
         self.hide()
@@ -1030,31 +1030,14 @@ class GUI(QMainWindow):
             self.checkInternetThread.ShowErrorPanel.connect(self.goToErrorPage)
             self.checkInternetThread.GoNextStep.connect(self.goNextStepSlotOutSide)
             self.checkInternetThread.start()
-        elif self.stepNow == 1: # step 1
 
-            self.checkCookiesThread = threading.Thread(target=self.checkCookies, args=())
-            self.checkCookiesThread.start()
-            
+        elif self.stepNow == 1: # step 1
+            self.handleUserDataAndRunSocket()
             loop = QEventLoop()
             QTimer.singleShot(1000, loop.quit)
             loop.exec_()
 
         elif self.stepNow == 2: # step 2
-            print("Make the analysis")
-            try:
-                makemodelUrl = 'http://54.74.171.130:8083/makeModelForFaces'
-                payload = json.dumps({"token": self.token,
-                                    "secretKey": "17iooi1kfb8qq1b",
-                                    "privateKey":"160061482862217iooi1kfb8qq1c"})
-                headers = {
-                    'content-type': "application/json",
-                    'cache-control': "no-cache"
-                    }
-
-                response = requests.request("POST", makemodelUrl, data=payload, headers=headers,timeout=1)
-                print(response.text)
-            except:
-                pass
             print("Device Checking...")
             # Make a Check for All Devices Thread
             
@@ -1178,7 +1161,7 @@ class GUI(QMainWindow):
             self.move(self.x() + delta.x(), self.y() + delta.y())
             self.oldPos = event.globalPos()
 
-    def checkCookies(self):
+    def handleUserDataAndRunSocket(self):
         print("Internet Success...")
         
         
@@ -1207,8 +1190,10 @@ class GUI(QMainWindow):
             self.chat_namespace.on('EndExam', self.closeAllFromSocket)
 
             print("Socket has been ini")
-            socketMainThread = threading.Thread(target=self.waitmainSocket, args=())
-            socketMainThread.start()
+            
+            
+            self.ThreadRunSocketWaitObject = ThreadRunSocketWait(self)
+            self.ThreadRunSocketWaitObject.start()
             print("Socket has been started")
 
             headers = {'authorization': "Bearer "+str(self.token)}
@@ -1217,7 +1202,7 @@ class GUI(QMainWindow):
             response = requests.get(UrlPostData,json=dataNew,headers=headers)
             
             print("-----------Request--------------")
-            # print(response.json())
+            
             self.TestName = response.json()['test']['name']
             self.isOnBoard = response.json()['test']['onboardingTest']
             # self.isOnBoard = False
@@ -1245,7 +1230,7 @@ class GUI(QMainWindow):
                 self.AllNotAllowed.append(prog)
 
             print("----------------------------------")
-            # print(self.AllNotAllowed)
+            
             self.TestDurationInt = str(response.json()['test']['duration'])
             
             self.username.setText('hi, '+self.Username)
@@ -1277,10 +1262,7 @@ class GUI(QMainWindow):
 
         
 
-    def while_closeAllBlackList(self):
-        while self.thCloseAppsThreadRunning:
-            self.closeAllBlackList()
-            time.sleep(5)
+      
 
             
     @pyqtSlot()
@@ -1428,8 +1410,6 @@ class GUI(QMainWindow):
 
     @pyqtSlot(bool)
     def goCheckingForNext(self,statues):
-        # self.stepNow +=1
-        # self.goNextStep(statues)
         self.predictButton.setEnabled(True)
         self.predictButton.setStyleSheet("""QPushButton{background-color: #0095ff;
         border-style: outset;
@@ -1855,6 +1835,41 @@ class ThreadInternetConnection(QThread):
                     self.ShowErrorPanel.emit()
                     break
         
+
+
+# SocketWaiting
+class ThreadRunSocketWait(QThread):
+    
+
+    
+    def __init__(self,window):
+        super(ThreadRunSocketWait,self).__init__(window)
+        self.WindowPanel = window
+
+
+
+
+    def run(self):
+        self.WindowPanel.socketIO.wait()
+
+# ClosingApp Thread
+class ThreadClosingApps(QThread):
+    
+
+    
+    def __init__(self,window):
+        super(ThreadClosingApps,self).__init__(window)
+        self.WindowPanel = window
+
+
+
+
+    def run(self):
+        while self.WindowPanel.thCloseAppsThreadRunning:
+            self.WindowPanel.closeAllBlackList()
+            print("Closing")
+            QThread.msleep(5000)
+
 # Internet Connection as it handle Requests
 class ThreadDeviceCheckConnection(QThread):
     # Create the signal
@@ -2913,8 +2928,8 @@ if __name__ == '__main__':
     set_reg(r"Software\\Classes\\Proctoring\\Shell\\Open\\command",'', '\"'+dir_path+'\\Proctoring.exe\"  "%0" "%1" "%2')
     
     runTheApp = False
-    # token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NywiaXNzIjoiQXBwIiwiaWF0IjoxNjA5NDkxMDA5NTQwLCJleHAiOjE2MDk0OTM2MDE1NDB9.3U59e1CSZ2gaoBQtE4RIYDDLTgX05jMMM8UNqCHtc9o' #None
-    # examId = '43'
+    # token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NywiaXNzIjoiQXBwIiwiaWF0IjoxNjEwNTM3NjEwNDM3LCJleHAiOjE2MTA1NDAyMDI0Mzd9.Yrudv72aSygUrIR8p-QjnafIp4FtiqrUl8EDJ8Rja-c' #None
+    # examId = '89'
     try:
         argumentData = sys.argv[1]
         token = argumentData.split("@/@")[1]
