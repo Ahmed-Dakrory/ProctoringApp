@@ -7,7 +7,13 @@ from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5 import uic
 import tempfile
-from pydub import AudioSegment
+
+
+import queue
+
+import sounddevice as sd
+import soundfile as sf
+
 
 import wave
 import datetime
@@ -58,6 +64,7 @@ import tensorflow as tf
 import dlib
 from imutils import face_utils
 from pynput import keyboard,mouse
+import keyboard as keyboardOtherFunctions
 
 
 
@@ -561,10 +568,10 @@ class MarkDetector:
                 mark[1])), 1, color, -1, cv2.LINE_AA)
 
 
-# keyboard.add_hotkey("alt + f4", lambda: None, suppress =True)
+# keyboardOtherFunctions.add_hotkey("alt + f4", lambda: None, suppress =True)
 # keyboard.add_hotkey("shift + f10", lambda: None, suppress =True)
 # keyboard.add_hotkey("ctrl + c", lambda: None, suppress =True)
-# keyboard.add_hotkey("PrtScn", lambda: None, suppress =True)
+keyboardOtherFunctions.add_hotkey("win + PrtScn", lambda: None, suppress =True)
 # keyboard.add_hotkey("alt + PrtScn", lambda: None, suppress =True)
 # keyboard.add_hotkey("ctrl + PrtScn", lambda: None, suppress =True)
 # keyboard.add_hotkey("ctrl + p", lambda: None, suppress =True)
@@ -695,16 +702,20 @@ class GUI(QMainWindow):
         
         headers = {'authorization': "Bearer "+str(self.token)}
         dataNew = {"status": True}
-        UrlPostData = 'http://new.tproctor.teqnia-tech.com/api/proctor-app/allow-test-student/'+self.examId
-        response = requests.put(UrlPostData,json=dataNew,headers=headers,timeout=1)
-        self.message = response.json()['message']
-        print(self.message)
-        print(response.text)
-        if self.message == 'Done':
-            self.OpenCameraApp()
-            
-        else:
+        try:
+            UrlPostData = 'http://new.tproctor.teqnia-tech.com/api/proctor-app/allow-test-student/'+self.examId
+            response = requests.put(UrlPostData,json=dataNew,headers=headers,timeout=1)
+            self.message = response.json()['message']
+            print(self.message)
+            print(response.text)
+            if self.message == 'Done':
+                self.OpenCameraApp()
+                
+            else:
+                print('Error')
+        except:
             print('Error')
+            self.close()
 
     def OpenLoaderUpload(self):
 
@@ -881,7 +892,7 @@ class GUI(QMainWindow):
         
     def EndTheExam(self):
         try:
-            # keyboard.unhook_all_hotkeys()
+            keyboardOtherFunctions.unhook_all_hotkeys()
             ctypes.windll.kernel32.SetThreadExecutionState(ES_CONTINUOUS)
             
             self.thControllersStop.listenerKeyBoard.stop()
@@ -891,7 +902,6 @@ class GUI(QMainWindow):
             self.th.cap.release()
             self.th.out.release()
             self.th.outScreen.release()
-            self.th.audio_thread.stop()
 
 
             self.thCloseAppsThreadRunning=False
@@ -935,7 +945,7 @@ class GUI(QMainWindow):
 
     def close(self):
         try:
-            
+            keyboardOtherFunctions.unhook_all_hotkeys()
             self.thControllersStop.listenerKeyBoard.stop()
             self.thControllersStop.listenerMouse.stop()
 
@@ -1509,34 +1519,7 @@ class GUI(QMainWindow):
 
     
 
-class AudioRecorder():
-    "Audio class based on pyAudio and Wave"
-    def __init__(self, filename="temp_audio.wav", rate=20480, fpb=1024, channels=2):
-        self.open = True
-        self.rate = rate
-        self.frames_per_buffer = fpb
-        self.channels = channels
-        self.format = pyaudio.paInt16
-        self.audio_filename = filename
-        self.audio = pyaudio.PyAudio()
-        self.stream = self.audio.open(format=self.format,
-                                      channels=self.channels,
-                                      rate=self.rate,
-                                      input=True,
-                                      frames_per_buffer = self.frames_per_buffer)
-        self.audio_frames = []
-        print(self.audio_filename)
 
-
-    def stop(self):
-        "Finishes the audio recording therefore the thread too"
-        if self.open:
-            self.open = False
-            self.stream.stop_stream()
-            self.stream.close()
-            self.audio.terminate()
-            
-            print("Finished")
             
 
     
@@ -1576,7 +1559,18 @@ class ThreadUploadFileCamera(QThread):
         
         self.changeLabel.emit("Processing ...")
 
-        cmd = '"'+dir_path+'\\ffmpeg.exe" -y -ac 2 -channel_layout stereo -i "'+self.th.PathOfFile+'" -i "'+self.th.filenameWav+'" -c:v copy -c:a aac -map 0:v:0 -map 1:a:0 "' +self.th.PathOfFileUploaded+'"'
+
+        audioCommand = subprocess.Popen('"'+dir_path+'\\ffprobe" -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "'+self.th.filenameWav+'"', shell=False, stdout=subprocess.PIPE)
+        subprocess_return = audioCommand.stdout.read()
+
+        timeOfAudio = str(subprocess_return)[2:len(str(subprocess_return))-5]
+
+        videoCommand = subprocess.Popen('"'+dir_path+'\\ffprobe" -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "'+self.th.PathOfFile+'"', shell=False, stdout=subprocess.PIPE)
+        subprocess_return = videoCommand.stdout.read()
+
+        timeOfVideo = str(subprocess_return)[2:len(str(subprocess_return))-5]
+        # cmd = '"'+dir_path+'\\ffmpeg.exe" -y -ac 2 -channel_layout stereo -i "'+self.th.PathOfFile+'" -i "'+self.th.filenameWav+'" -c:v copy -c:a aac -map 0:v:0 -map 1:a:0 "' +self.th.PathOfFileUploaded+'"'
+        cmd = '"'+dir_path+'\\ffmpeg.exe" -y -ac 2 -channel_layout stereo -i "'+self.th.PathOfFile+'" -i "'+self.th.filenameWav+'" -filter_complex "[0:v]setpts=PTS*1.0*'+timeOfAudio+'/'+timeOfVideo+'-6 [v]" -map "[v]" -map "1:a" -vcodec libvpx-vp9 "' +self.th.PathOfFileUploaded+'"'
         subprocess.call(cmd, shell=True)
 
         chunksize = 1000000
@@ -1973,22 +1967,32 @@ class ThreadDeviceCheckConnection(QThread):
         loop.exec_()
 
         # Check Hard
-        if True:
+        self.HardDrivers = wmiService.query("Select Name, FreeSpace, Size from Win32_LogicalDisk")
+        self.C_Drive_Space = 0
+        for item in self.HardDrivers:
+            if item.DeviceID == 'C:':
+                self.C_Drive_Space  = (int(item.FreeSpace)/1024/1024)
+
+        if self.C_Drive_Space >= (int(self.WindowPanel.TestDurationInt) * 43) :
             self.WindowPanel.bar_hard.setVisible(True)
             self.WindowPanel.success_hard.setVisible(True)
         else:
             self.checkResult = False
+
+       
         
         loop = QEventLoop()
         QTimer.singleShot(500, loop.quit)
         loop.exec_()
 
         # Check Monitor
-        if True:
+        self.MonitorNumbers = wmiService.query("SELECT * FROM Win32_PnPEntity where service='monitor'")
+        if len(self.MonitorNumbers) == 1:
             self.WindowPanel.bar_screen.setVisible(True)
             self.WindowPanel.success_screen.setVisible(True)
         else:
             self.checkResult = False
+
         
         loop = QEventLoop()
         QTimer.singleShot(500, loop.quit)
@@ -2013,7 +2017,7 @@ class ThreadDeviceCheckConnection(QThread):
             # here we will show the list of the closed apps so we will proceed or close the App
             self.openListOfClosingApp.emit("Nothing")
         else:
-            self.ShowErrorPanel.emit("Please Check the Last Devices")
+            self.ShowErrorPanel.emit("Please Check the unComplete Steps")
         
 
 # Camera For Pose Thread
@@ -2734,7 +2738,6 @@ class ThreadCameraVideo(QThread):
     changeStrLight = pyqtSignal(str)
     changeStrTime = pyqtSignal(str)
     
-    audio_thread = None
     frame_counts = 0
     start_time = time.time()
     ThreadCameraVideoIsRun = True
@@ -2747,7 +2750,12 @@ class ThreadCameraVideo(QThread):
         dateRand = (t-datetime.datetime(1970,1,1)).total_seconds()
         return int(math.floor(random.randint(33333, 999999)) + dateRand)
 
-
+    def callback(self,indata, frames, time, status):
+        """This is called (from a separate thread) for each audio block."""
+        
+        self.qSound.put(indata.copy())
+        # write the audio
+        self.file.write(self.qSound.get())
     
     def run(self):
         self.cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
@@ -2762,14 +2770,30 @@ class ThreadCameraVideo(QThread):
         if int(self.cap.get(cv2.CAP_PROP_FPS)) == 0:
             self.fps = 13
         else:
-            self.fps = int(self.cap.get(cv2.CAP_PROP_FPS))*0.5
+            self.fps = int(self.cap.get(cv2.CAP_PROP_FPS)*0.5)
         print("--------------------------------------")
-        print("FPS: ",self.fps)
+        print("FPSNEw: ",self.cap.get(cv2.CAP_PROP_FPS))
+        
+        self.device = None
+        device_info = sd.query_devices(self.device, 'input')
+        # soundfile expects an int, sounddevice provides a float:
+        self.soundRate = int(device_info['default_samplerate'])
+        self.soundfpb = 1024
+        # self.fps = self.soundRate /self.soundfpb
         self.out = cv2.VideoWriter()
         self.out.open(self.PathOfFile, fourcc,  self.fps, (250, 250),True)
-        self.filenameWav = tempfile.gettempdir()+"\\"+str(self.getUnique())+".wav"
-        self.audio_thread = AudioRecorder(filename=self.filenameWav, rate=int(self.fps*1024), fpb=1024, channels=2)
-
+        #temp file for sound
+        self.wavDirectory = tempfile.gettempdir()
+        self.wavFileSuffix = str(self.getUnique())
+        self.wavFileName = self.wavFileSuffix+".wav"
+        self.filenameWav = self.wavDirectory+"\\"+self.wavFileName
+        # self.soundRate = int(self.fps*self.soundfpb)
+        self.channels = 2
+    
+        
+        
+        self.qSound = queue.Queue()
+        
         
         # display screen resolution, get it from your OS settings
         
@@ -2779,101 +2803,70 @@ class ThreadCameraVideo(QThread):
         # create the video write object
         self.outScreen = cv2.VideoWriter()
         self.outScreen.open(self.PathNameOfFileScreen, fourcc2, self.fps, (250,250), True)
-        self.audio_thread.stream.start_stream()
+        
         
         count = 0
         self.frame_counts = 1
         self.start_time = time.time()
-        audio_frames = []
-        if (self.audio_thread.open == True):
-            try:
-                self.lastdata = self.audio_thread.stream.read(self.audio_thread.frames_per_buffer, exception_on_overflow = False) 
-            except:
-                self.lastdata = []
-            audio_frames.append(self.lastdata)
-            waveFile = wave.open(self.filenameWav, 'wb')
-            waveFile.setnchannels(self.audio_thread.channels)
-            waveFile.setsampwidth(self.audio_thread.audio.get_sample_size(self.audio_thread.format))
-            waveFile.setframerate(self.audio_thread.rate)
-            waveFile.writeframes(b''.join(audio_frames))
-            waveFile.close()
-        while self.ThreadCameraVideoIsRun:
-            
-            imgScreen = pyautogui.screenshot()
-            # convert these pixels to a proper numpy array to work with OpenCV
-            frameScreen = np.array(imgScreen)
-            # convert colors from BGR to RGB
-            frameScreen = cv2.cvtColor(frameScreen, cv2.COLOR_BGR2RGB)
-            dimOld = (250, 250)
-            frameScreen = cv2.resize(frameScreen, dimOld, interpolation = cv2.INTER_AREA)
-            # write the frame
-            self.outScreen.write(frameScreen)
-            # write the audio
-            
-            # if not self.audio_thread.open:
-            #     break
-            ret, sample_frame = self.cap.read()
-            count+= 1
-            if ret:
-                self.textLight = ''
-                if count % IMAGE_PER_POSE==0:
-                    gray = cv2.cvtColor(sample_frame, cv2.COLOR_BGR2GRAY)
-                    fm = cv2.Laplacian(gray, cv2.CV_64F).var()
-                    
-                
-                    fm2=np.mean(sample_frame)
-                    # print(fm2)
-                    if fm2 < Dark_Threshold:
-                        self.textLight = "Room too dark"
-                        self.changeStrLight.emit(self.textLight)
-                    elif fm2 > Dark_Threshold+50:
-                        self.textLight="Low the light"
-                        self.changeStrLight.emit(self.textLight)
-                    else:
-                        self.textLight=""
-                        self.changeStrLight.emit(self.textLight)
-
-                    
-
-                self.changeStrTime.emit("Accept")
-                frame = cv2.flip(sample_frame, 2)
-                # width  = self.cap.get(cv2.cv.CV_CAP_PROP_FRAME_WIDTH)  # float
-                # height = self.cap.get(cv2.cv.CV_CAP_PROP_FRAME_HEIGHT) # float
-                dim = (250, 250)
-                frame = cv2.resize(frame, dim) 
-                audio_frames = []
-                if (self.audio_thread.open == True):
+        
+        with sf.SoundFile(self.filenameWav, mode='x', samplerate=self.soundRate,channels=self.channels, subtype=None) as self.file:
+            with sd.InputStream(samplerate=self.soundRate, device=None,channels=self.channels, callback=self.callback):
+                while self.ThreadCameraVideoIsRun:
                     try:
-                        data = self.audio_thread.stream.read(self.audio_thread.frames_per_buffer, exception_on_overflow = False) 
-                        self.lastdata = data
-                    except:
-                        pass
-                    audio_frames.append(self.lastdata)
-                    
-                    waveFile = wave.open(tempfile.gettempdir()+"\\tempsound.wav", 'wb')
-                    waveFile.setnchannels(self.audio_thread.channels)
-                    waveFile.setsampwidth(self.audio_thread.audio.get_sample_size(self.audio_thread.format))
-                    waveFile.setframerate(self.audio_thread.rate)
-                    waveFile.writeframes(b''.join(audio_frames))
-                    waveFile.close()
+                        imgScreen = pyautogui.screenshot()
+                        # convert these pixels to a proper numpy array to work with OpenCV
+                        frameScreen = np.array(imgScreen)
+                        # convert colors from BGR to RGB
+                        frameScreen = cv2.cvtColor(frameScreen, cv2.COLOR_BGR2RGB)
+                        dimOld = (250, 250)
+                        frameScreen = cv2.resize(frameScreen, dimOld, interpolation = cv2.INTER_AREA)
+                        # write the frame
+                        self.outScreen.write(frameScreen)
+                    except Exception as e:
+                        print("Error")
+                        print(str(e))
 
-                    sound1 = AudioSegment.from_wav(self.filenameWav)
-                    sound2 = AudioSegment.from_wav(tempfile.gettempdir()+"\\tempsound.wav")
+                    ret, sample_frame = self.cap.read()
+                    count+= 1
+                    if ret:
+                        self.textLight = ''
+                        if count % IMAGE_PER_POSE==0:
+                            gray = cv2.cvtColor(sample_frame, cv2.COLOR_BGR2GRAY)
+                            fm = cv2.Laplacian(gray, cv2.CV_64F).var()
+                            
+                        
+                            fm2=np.mean(sample_frame)
+                            
+                            if fm2 < Dark_Threshold:
+                                self.textLight = "Room too dark"
+                                self.changeStrLight.emit(self.textLight)
+                            elif fm2 > Dark_Threshold+50:
+                                self.textLight="Low the light"
+                                self.changeStrLight.emit(self.textLight)
+                            else:
+                                self.textLight=""
+                                self.changeStrLight.emit(self.textLight)
 
-                    combined_sounds = sound1 + sound2
-                    # print(len(combined_sounds)) 
-                    combined_sounds.export(self.filenameWav, format="wav")
-                    if not self.audio_thread.open:
-                        break
-                self.out.write(frame)
-                rgbImage = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                h, w, ch = rgbImage.shape
-                bytesPerLine = ch * w
-                convertToQtFormat = QImage(rgbImage.data, w, h, bytesPerLine, QImage.Format_RGB888)
-                self.changePixmap.emit(convertToQtFormat)
-                self.frame_counts += 1
+                            
 
-        self.audio_thread.stop()
+                        self.changeStrTime.emit("Accept")
+                        frame = cv2.flip(sample_frame, 2)
+                        # width  = self.cap.get(cv2.cv.CV_CAP_PROP_FRAME_WIDTH)  # float
+                        # height = self.cap.get(cv2.cv.CV_CAP_PROP_FRAME_HEIGHT) # float
+                        
+                        
+                        dim = (250, 250)
+                        frame = cv2.resize(frame, dim) 
+                        self.out.write(frame)
+
+                        # self.qSound = queue.Queue()
+                        rgbImage = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                        h, w, ch = rgbImage.shape
+                        bytesPerLine = ch * w
+                        convertToQtFormat = QImage(rgbImage.data, w, h, bytesPerLine, QImage.Format_RGB888)
+                        self.changePixmap.emit(convertToQtFormat)
+                        self.frame_counts += 1
+
         self.cap.release()
         self.out.release()
         self.outScreen.release()
@@ -2928,8 +2921,8 @@ if __name__ == '__main__':
     set_reg(r"Software\\Classes\\Proctoring\\Shell\\Open\\command",'', '\"'+dir_path+'\\Proctoring.exe\"  "%0" "%1" "%2')
     
     runTheApp = False
-    # token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NywiaXNzIjoiQXBwIiwiaWF0IjoxNjEwNTM3NjEwNDM3LCJleHAiOjE2MTA1NDAyMDI0Mzd9.Yrudv72aSygUrIR8p-QjnafIp4FtiqrUl8EDJ8Rja-c' #None
-    # examId = '89'
+    # token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NywiaXNzIjoiQXBwIiwiaWF0IjoxNjEwODAxMzUwNjYxLCJleHAiOjE2MTA4MDM5NDI2NjF9.DEYG2GjGuVubmdLtxDMdDfKMx6XUOpGOpLsR4JY0dl4' #None
+    # examId = '106'
     try:
         argumentData = sys.argv[1]
         token = argumentData.split("@/@")[1]
