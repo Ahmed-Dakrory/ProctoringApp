@@ -74,7 +74,7 @@ for proc in psutil.process_iter():
     if proc.name() == "Proctoring.exe":
         numberOfRunning+=1
         if numberOfRunning >1:
-            print("Killed")
+            # print("Killed")
             proc.kill()
 
 #######################################################
@@ -1207,9 +1207,11 @@ class GUI(QMainWindow):
             print("Socket has been started")
 
             headers = {'authorization': "Bearer "+str(self.token)}
-            dataNew = {"token": self.token}
+            # dataNew = {"token": self.token}
+            print("------------------------------------------------")
+            print(self.examId)
             UrlPostData = 'http://new.tproctor.teqnia-tech.com/api/proctor-app/test-requirements/'+self.examId
-            response = requests.get(UrlPostData,json=dataNew,headers=headers)
+            response = requests.get(UrlPostData,headers=headers,timeout=1)
             
             print("-----------Request--------------")
             
@@ -2190,11 +2192,13 @@ class ThreadCameraRecognition(QThread):
                         imencoded = cv2.imencode('.jpg', image)[1]
                         fileName = 'recognimage.jpg'
                         files = {'image': (fileName, imencoded.tostring(), 'image/jpeg', {'Expires': '0'})}
-                        payload = {"secretKey": "17iooi1kfb8qq1b",
-                                "privateKey":"160061482862217iooi1kfb8qq1c"}
+                        # payload = {"secretKey": "17iooi1kfb8qq1b",
+                        #         "privateKey":"160061482862217iooi1kfb8qq1c"}
+                        header = {"Authorization": "Bearer "+self.token}
+
                         try:
-                            urlRecognition = "http://54.74.171.130:8083/faceTheAnalysis"
-                            response = requests.request("POST", urlRecognition,files = files,data = payload)
+                            urlRecognition = "http://new.tproctor.teqnia-tech.com/api/proctor-app/check-my-image"
+                            response = requests.request("POST", urlRecognition,files = files,headers = header)
                             print(response.text)
                             print(response.json()['state'])
                             if response.json()['state'] == 'findFace' and str(self.studentId) == response.json()['personId']:
@@ -2802,7 +2806,13 @@ class ThreadCameraVideo(QThread):
         fourcc2 = cv2.VideoWriter_fourcc(*'H264')
         # create the video write object
         self.outScreen = cv2.VideoWriter()
-        self.outScreen.open(self.PathNameOfFileScreen, fourcc2, self.fps, (250,250), True)
+        try:
+            widthScreen = int(SCREEN_SIZE.width/2)
+            hightScreen = int(SCREEN_SIZE.height/2)
+        except:
+            widthScreen = int(250)
+            hightScreen = int(250)
+        self.outScreen.open(self.PathNameOfFileScreen, fourcc2, self.fps, (widthScreen,hightScreen), True)
         
         
         count = 0
@@ -2818,7 +2828,9 @@ class ThreadCameraVideo(QThread):
                         frameScreen = np.array(imgScreen)
                         # convert colors from BGR to RGB
                         frameScreen = cv2.cvtColor(frameScreen, cv2.COLOR_BGR2RGB)
-                        dimOld = (250, 250)
+                        
+
+                        dimOld = (widthScreen, hightScreen)
                         frameScreen = cv2.resize(frameScreen, dimOld, interpolation = cv2.INTER_AREA)
                         # write the frame
                         self.outScreen.write(frameScreen)
@@ -2921,8 +2933,8 @@ if __name__ == '__main__':
     set_reg(r"Software\\Classes\\Proctoring\\Shell\\Open\\command",'', '\"'+dir_path+'\\Proctoring.exe\"  "%0" "%1" "%2')
     
     runTheApp = False
-    # token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NywiaXNzIjoiQXBwIiwiaWF0IjoxNjEwODAxMzUwNjYxLCJleHAiOjE2MTA4MDM5NDI2NjF9.DEYG2GjGuVubmdLtxDMdDfKMx6XUOpGOpLsR4JY0dl4' #None
-    # examId = '106'
+    # token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NywiaXNzIjoiQXBwIiwiaWF0IjoxNjEwODczNDA4NDgzLCJleHAiOjE2MTA4NzYwMDA0ODN9.0-erZdtOPoM-ziP3xFcmh2DySFIEXkRxhMgSjbDRD4Q' #None
+    # examId = '122'
     try:
         argumentData = sys.argv[1]
         token = argumentData.split("@/@")[1]
