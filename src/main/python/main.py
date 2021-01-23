@@ -636,9 +636,9 @@ class GUI(QMainWindow):
 
         # Adapte Views
         # set Internet gid
-        movie = QMovie(self.dir_path+"/imageface/internet.gif")
-        self.internetChecking.setMovie(movie)
-        movie.start()
+        # movie = QMovie(self.dir_path+"/imageface/internet.gif")
+        # self.internetChecking.setMovie(movie)
+        # movie.start()
 
         # set Success Devices
         self.bar_cam.setVisible(False)
@@ -738,15 +738,15 @@ class GUI(QMainWindow):
     @pyqtSlot()
     def afterUploadingStep(self):
         self.LoaderUpload.predictButton.setEnabled(True)
-        self.LoaderUpload.predictButton.setStyleSheet("""QPushButton{background-color: #0095ff;
-            border-style: outset;
-            border-width: 1px;
-            border-radius: 5px;
-            border-color: #e8e8e8;
-            padding: 4px;
-            color: #fbfbfb;
-            font-size: 15px;
-            font-weight: 700;}
+        self.LoaderUpload.predictButton.setStyleSheet("""QPushButton{background-color: #0573d1;
+        border-style: outset;
+        border-width: 1px;
+        border-radius: 5px;
+        border-color: #e8e8e8;
+        padding: 4px;
+        color: #fbfbfb;
+        font-size: 15px;
+        font-weight: 700;}
             
             QPushButton:hover{background-color: #0095ff;
             border-style: outset;
@@ -866,12 +866,12 @@ class GUI(QMainWindow):
         self.ex.minimizeButton.clicked.connect(lambda: self.MinimizeVideo())
         self.ex.EndExamButton.clicked.connect(lambda: self.EndTheExam())
         self.oldPos = self.ex.pos()
-        self.ex.setFixedWidth(249)
+        self.ex.setFixedWidth(331)
         self.WindowCameraOpened = True
         self.ex.show()
         
 
-        self.ex.move(sizeObject.width()-250,sizeObject.height()-300)
+        self.ex.move(sizeObject.width()-331,sizeObject.height()-361)
         self.th = ThreadCameraVideo(self.ex)
         self.th.changePixmap.connect(self.setImageVideo)
         self.th.changeStrLight.connect(self.setLightHint)
@@ -930,15 +930,15 @@ class GUI(QMainWindow):
             self.IsMinimized = False
             self.animation1 = QPropertyAnimation(self.ex, b"size")
             self.animation1.setDuration(500) #Default 250ms
-            self.animation1.setEndValue(QSize(249,289))
-            self.ex.setFixedWidth(249)
+            self.animation1.setEndValue(QSize(333,361))
+            self.ex.setFixedWidth(333)
             self.animation1.start()
         else:
             self.IsMinimized = True
             self.animation = QPropertyAnimation(self.ex, b"size")
             self.animation.setDuration(500) #Default 250ms
-            self.animation.setEndValue(QSize(249,39))
-            self.ex.setFixedWidth(249)
+            self.animation.setEndValue(QSize(333,41))
+            self.ex.setFixedWidth(333)
             self.animation.start()
 
         
@@ -1128,7 +1128,7 @@ class GUI(QMainWindow):
             self.goNextStep(False)
         elif self.stepNow == 7:
             self.predictButton.setEnabled(True)
-            self.predictButton.setStyleSheet("""QPushButton{background-color: #0095ff;
+            self.predictButton.setStyleSheet("""QPushButton{background-color: #0573d1;
             border-style: outset;
             border-width: 1px;
             border-radius: 5px;
@@ -1328,7 +1328,7 @@ class GUI(QMainWindow):
             if not isExist:
                 try:
                     i = QListWidgetItem(proc.name())
-                    i.setBackground(QColor('#beaed4'))
+                    # i.setBackground(QColor('#beaed4'))
                     self.listOfClosingApps.listWidget.addItem(i)
                 except:
                     pass
@@ -1423,7 +1423,7 @@ class GUI(QMainWindow):
     @pyqtSlot(bool)
     def goCheckingForNext(self,statues):
         self.predictButton.setEnabled(True)
-        self.predictButton.setStyleSheet("""QPushButton{background-color: #0095ff;
+        self.predictButton.setStyleSheet("""QPushButton{background-color: #0573d1;
         border-style: outset;
         border-width: 1px;
         border-radius: 5px;
@@ -2933,8 +2933,8 @@ if __name__ == '__main__':
     set_reg(r"Software\\Classes\\Proctoring\\Shell\\Open\\command",'', '\"'+dir_path+'\\Proctoring.exe\"  "%0" "%1" "%2')
     
     runTheApp = False
-    # token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NywiaXNzIjoiQXBwIiwiaWF0IjoxNjEwODczNDA4NDgzLCJleHAiOjE2MTA4NzYwMDA0ODN9.0-erZdtOPoM-ziP3xFcmh2DySFIEXkRxhMgSjbDRD4Q' #None
-    # examId = '122'
+    # token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NywiaXNzIjoiQXBwIiwiaWF0IjoxNjExMDYyNjU2MDU4LCJleHAiOjE2MTEwNjUyNDgwNTh9.6hqn2LPcMqGK9BTYqVok2r92pIjqix7rzK7RN-lZGBY' #None
+    # examId = '153'
     try:
         argumentData = sys.argv[1]
         token = argumentData.split("@/@")[1]

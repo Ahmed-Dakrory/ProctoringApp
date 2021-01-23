@@ -6,19 +6,19 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>446</width>
-    <height>291</height>
+    <width>523</width>
+    <height>373</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>MainWindow</string>
   </property>
   <property name="styleSheet">
-   <string notr="true">background-color: rgba(255, 255, 255, 255);</string>
+   <string notr="true">background-color: #ffffff;</string>
   </property>
   <widget class="QWidget" name="centralwidget">
    <property name="styleSheet">
-    <string notr="true">background-color: rgb(16, 22, 45);
+    <string notr="true">background-color: #ffffff;
  border-style: outset;
         border-width: 1px;
         border-radius: 15px;
@@ -28,23 +28,23 @@
     <property name="geometry">
      <rect>
       <x>260</x>
-      <y>240</y>
+      <y>310</y>
       <width>121</width>
       <height>41</height>
      </rect>
     </property>
     <property name="styleSheet">
-     <string notr="true">QPushButton{background-color: rgb(255, 174, 42);
-        border-style: outset;
-        border-width: 1px;
-        border-radius: 5px;
-        border-color: #e8e8e8;
-        padding: 4px;
+     <string notr="true">QPushButton{
         color: #fbfbfb;
         font-size: 15px;
-        font-weight: 700;}
+        font-weight: 700;
+
+  padding: 32px;
+  border-radius: 8px;
+  border: solid 0.8px #e8e8e8;
+  background-color: #0573d1;}
         
-        QPushButton:hover{background-color: rgb(255, 214, 48);
+        QPushButton:hover{background-color:#0573d1;
         border-style: outset;
         border-width: 1px;
         border-radius: 5px;
@@ -62,31 +62,30 @@
     <property name="geometry">
      <rect>
       <x>110</x>
-      <y>240</y>
+      <y>310</y>
       <width>121</width>
       <height>41</height>
      </rect>
     </property>
     <property name="styleSheet">
-     <string notr="true">QPushButton{background-color: rgb(255, 0, 42);
-        border-style: outset;
-        border-width: 1px;
-        border-radius: 5px;
-        border-color: #e8e8e8;
-        padding: 4px;
-        color: #fbfbfb;
+     <string notr="true">QPushButton{
+       color: #fbfbfb;
         font-size: 15px;
-        font-weight: 700;}
+        font-weight: 700;
+
+  padding: 32px;
+  border-radius: 8px;
+  border: solid 0.8px #e8e8e8;
+  background-color: #e01f3d}
         
-        QPushButton:hover{background-color: rgb(255, 10, 48);
-        border-style: outset;
-        border-width: 1px;
-        border-radius: 5px;
-        border-color: #e8e8e8;
-        padding: 4px;
-        color: #565050;
+        QPushButton:hover{ color: #565050;
         font-size: 15px;
-        font-weight: 700;}</string>
+        font-weight: 700;
+
+  padding: 32px;
+  border-radius: 8px;
+  border: solid 0.8px #e8e8e8;
+  background-color: #e01f39;}</string>
     </property>
     <property name="text">
      <string>Close</string>
@@ -95,16 +94,22 @@
    <widget class="QListWidget" name="listWidget">
     <property name="geometry">
      <rect>
-      <x>10</x>
+      <x>60</x>
       <y>60</y>
       <width>401</width>
-      <height>151</height>
+      <height>241</height>
      </rect>
     </property>
     <property name="font">
      <font>
       <pointsize>16</pointsize>
      </font>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">margin: 16px 0 17px;
+  padding: 16px 16px 15px;
+  border-radius: 8px;
+  background-color: #def0ff;</string>
     </property>
     <property name="spacing">
      <number>2</number>
@@ -115,22 +120,28 @@
      <rect>
       <x>10</x>
       <y>10</y>
-      <width>411</width>
-      <height>31</height>
+      <width>511</width>
+      <height>51</height>
      </rect>
     </property>
     <property name="font">
      <font>
-      <family>Palatino Linotype</family>
-      <pointsize>14</pointsize>
-      <weight>50</weight>
+      <family>Poppins</family>
+      <pointsize>-1</pointsize>
+      <weight>75</weight>
       <italic>false</italic>
-      <bold>false</bold>
+      <bold>true</bold>
      </font>
     </property>
     <property name="styleSheet">
-     <string notr="true">font: 14pt &quot;Palatino Linotype&quot;;
-color: rgb(255, 255, 255);</string>
+     <string notr="true">margin: 0 0 16px;
+  font-family: Poppins;
+  font-size: 20px;
+  font-weight: bold;
+  font-style: normal;
+  line-height: 1.6;
+  letter-spacing: normal;
+  color: #343433;</string>
     </property>
     <property name="text">
      <string>Proctoring Will Close those Apps are you agree?</string>

@@ -6,25 +6,38 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>249</width>
-    <height>289</height>
+    <width>333</width>
+    <height>361</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>MainWindow</string>
   </property>
   <property name="styleSheet">
-   <string notr="true">background-color: rgb(16, 22, 45);</string>
+   <string notr="true">background-color:#ffffff;</string>
   </property>
   <widget class="QWidget" name="centralwidget">
    <widget class="QLabel" name="CameraVideo">
     <property name="geometry">
      <rect>
-      <x>0</x>
-      <y>40</y>
+      <x>50</x>
+      <y>50</y>
       <width>250</width>
       <height>250</height>
      </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">border-style: outset;
+        border-width: 1px;
+        border-radius: 11px;
+        border-color: #e8e8e8;
+
+  line-height: 2;
+  letter-spacing: normal;
+  text-align: center;
+  color: #ffffff;
+  border-radius: 8px;
+  background-color: #fffffd;</string>
     </property>
     <property name="text">
      <string>Camera</string>
@@ -35,7 +48,7 @@
      <rect>
       <x>-10</x>
       <y>0</y>
-      <width>271</width>
+      <width>351</width>
       <height>41</height>
      </rect>
     </property>
@@ -55,7 +68,7 @@
    <widget class="QPushButton" name="minimizeButton">
     <property name="geometry">
      <rect>
-      <x>220</x>
+      <x>300</x>
       <y>10</y>
       <width>21</width>
       <height>21</height>
@@ -87,30 +100,35 @@
    <widget class="QPushButton" name="EndExamButton">
     <property name="geometry">
      <rect>
-      <x>10</x>
-      <y>10</y>
-      <width>111</width>
-      <height>21</height>
+      <x>80</x>
+      <y>310</y>
+      <width>177</width>
+      <height>42</height>
      </rect>
     </property>
     <property name="styleSheet">
-     <string notr="true">QPushButton{background-color: rgb(94, 99, 97);
-        border-style: outset;
-        border-width:0;
-        border-radius: 5px;
-        border-color: #e8e8e8;
-        color: rgb(0, 0, 127);
-        font-size: 13px;
-        font-weight: 900;}
+     <string notr="true">QPushButton{font-family: Poppins;
+  font-size: 12px;
+  font-weight: bold;
+  font-style: normal;
+  line-height: 2;
+  letter-spacing: normal;
+  text-align: center;
+  color: #ffffff;
+  border-radius: 8px;
+  background-color: #e01f3d;}
         
-        QPushButton:hover{background-color:  rgb(94, 99, 97);
-        border-style: outset;
-        border-width: 0px;
-        border-radius: 5px;
-        border-color: #e8e8e8;
-        color: rgb(46, 63, 127);
-        font-size: 13px;
-        font-weight: 700;}</string>
+        QPushButton:hover{font-family: Poppins;
+  font-size: 12px;
+  font-weight: bold;
+  font-style: normal;
+  line-height: 2;
+  letter-spacing: normal;
+  text-align: center;
+  color: #ffffff;
+  border-radius: 8px;
+  background-color: #e01f3d;
+        color: rgba(100, 250, 200,255);}</string>
     </property>
     <property name="text">
      <string>End Exam</string>
@@ -119,8 +137,8 @@
    <widget class="QPushButton" name="TimerNote">
     <property name="geometry">
      <rect>
-      <x>150</x>
-      <y>50</y>
+      <x>200</x>
+      <y>10</y>
       <width>91</width>
       <height>21</height>
      </rect>
@@ -131,7 +149,7 @@
         border-width:0;
         border-radius: 5px;
         border-color: #e8e8e8;
-        color: rgb(70, 211, 0);
+ 		 color: #ffffff;
         font-size: 13px;
         font-weight: 900;}
         
@@ -151,8 +169,8 @@
    <widget class="QPushButton" name="LightNote">
     <property name="geometry">
      <rect>
-      <x>10</x>
-      <y>50</y>
+      <x>50</x>
+      <y>10</y>
       <width>141</width>
       <height>21</height>
      </rect>
@@ -163,7 +181,7 @@
         border-width:0;
         border-radius: 5px;
         border-color: #e8e8e8;
-        color: rgb(70, 211, 0);
+ 		 color: #ffffff;
         font-size: 13px;
         font-weight: 900;}
         
@@ -178,6 +196,28 @@
     </property>
     <property name="text">
      <string>Increase Light</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_2">
+    <property name="geometry">
+     <rect>
+      <x>5</x>
+      <y>3</y>
+      <width>35</width>
+      <height>35</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">background-color: rgba(87, 96, 100,0);</string>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="pixmap">
+     <pixmap>imageface/logo-light.png</pixmap>
+    </property>
+    <property name="scaledContents">
+     <bool>true</bool>
     </property>
    </widget>
   </widget>

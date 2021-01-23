@@ -7,18 +7,18 @@
     <x>0</x>
     <y>0</y>
     <width>703</width>
-    <height>194</height>
+    <height>177</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>MainWindow</string>
   </property>
   <property name="styleSheet">
-   <string notr="true">background-color: rgba(255, 255, 255, 255);</string>
+   <string notr="true">background-color: #fffff;</string>
   </property>
   <widget class="QWidget" name="centralwidget">
    <property name="styleSheet">
-    <string notr="true">background-color: rgb(16, 22, 45);
+    <string notr="true">background-color: #ffffff;
  border-style: outset;
         border-width: 1px;
         border-radius: 15px;
@@ -27,27 +27,27 @@
    <widget class="QPushButton" name="okError">
     <property name="geometry">
      <rect>
-      <x>560</x>
-      <y>140</y>
+      <x>390</x>
+      <y>120</y>
       <width>121</width>
       <height>41</height>
      </rect>
     </property>
     <property name="styleSheet">
-     <string notr="true">QPushButton{background-color: rgb(255, 174, 42);
+     <string notr="true">QPushButton{background-color: #0573d1;
         border-style: outset;
         border-width: 1px;
-        border-radius: 5px;
+        border-radius: 8px;
         border-color: #e8e8e8;
         padding: 4px;
         color: #fbfbfb;
         font-size: 15px;
         font-weight: 700;}
         
-        QPushButton:hover{background-color: rgb(255, 214, 48);
+        QPushButton:hover{background-color: #0095ff;
         border-style: outset;
         border-width: 1px;
-        border-radius: 5px;
+        border-radius: 8px;
         border-color: #e8e8e8;
         padding: 4px;
         color: #565050;
@@ -62,51 +62,76 @@
     <property name="geometry">
      <rect>
       <x>20</x>
-      <y>30</y>
+      <y>50</y>
       <width>671</width>
-      <height>81</height>
+      <height>31</height>
      </rect>
     </property>
     <property name="styleSheet">
-     <string notr="true">font: 75 26pt &quot;MS Shell Dlg 2&quot;;
-color: rgb(255, 255, 255);</string>
+     <string notr="true">font-family: Poppins;
+  font-size: 14px;
+  font-weight: 500;
+  font-style: normal;
+  line-height: 1.71;
+  letter-spacing: normal;
+  color: #343433;</string>
     </property>
     <property name="text">
-     <string>Error</string>
+     <string>Please check this error ok?</string>
     </property>
    </widget>
    <widget class="QPushButton" name="close">
     <property name="geometry">
      <rect>
-      <x>340</x>
-      <y>140</y>
+      <x>220</x>
+      <y>120</y>
       <width>121</width>
       <height>41</height>
      </rect>
     </property>
     <property name="styleSheet">
-     <string notr="true">QPushButton{background-color: rgb(255, 0, 42);
+     <string notr="true">QPushButton{background-color:rgb(224, 31, 61);
         border-style: outset;
-        border-width: 1px;
-        border-radius: 5px;
+        border-width:0;
+        border-radius: 8px;
         border-color: #e8e8e8;
-        padding: 4px;
         color: #fbfbfb;
-        font-size: 15px;
-        font-weight: 700;}
+        font-size: 13px;
+        font-weight: 900;}
         
-        QPushButton:hover{background-color: rgb(255, 10, 48);
+        QPushButton:hover{background-color:  rgb(94, 99, 97);
         border-style: outset;
-        border-width: 1px;
-        border-radius: 5px;
+        border-width: 0px;
+        border-radius: 8px;
         border-color: #e8e8e8;
-        padding: 4px;
         color: #565050;
-        font-size: 15px;
+        font-size: 13px;
         font-weight: 700;}</string>
     </property>
     <property name="text">
      <string>Close</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="errorLabel_2">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>10</y>
+      <width>671</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">font-family: Poppins;
+  font-size: 20px;
+  font-weight: bold;
+  font-style: normal;
+  line-height: 1.6;
+  letter-spacing: normal;
+  color: #343433;</string>
+    </property>
+    <property name="text">
+     <string>Proctor Message</string>
     </property>
    </widget>
   </widget>

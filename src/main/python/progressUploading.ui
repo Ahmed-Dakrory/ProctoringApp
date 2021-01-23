@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1047</width>
-    <height>540</height>
+    <height>535</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -20,23 +20,26 @@
    <string>MainWindow</string>
   </property>
   <property name="styleSheet">
-   <string notr="true">QMainWindow{background: rgba(7, 7, 7,255);}</string>
+   <string notr="true">QMainWindow{background-color:#ffffff;}</string>
   </property>
   <widget class="QWidget" name="centralwidget">
+   <property name="styleSheet">
+    <string notr="true">background-color:#ffffff;</string>
+   </property>
    <widget class="QPushButton" name="predictButton">
     <property name="geometry">
      <rect>
-      <x>910</x>
-      <y>490</y>
-      <width>111</width>
-      <height>31</height>
+      <x>895</x>
+      <y>470</y>
+      <width>113</width>
+      <height>42</height>
      </rect>
     </property>
     <property name="styleSheet">
-     <string notr="true">QPushButton{background-color: #0095ff;
+     <string notr="true">QPushButton{background-color: #0573d1;
         border-style: outset;
         border-width: 1px;
-        border-radius: 5px;
+        border-radius: 8px;
         border-color: #e8e8e8;
         padding: 4px;
         color: #fbfbfb;
@@ -46,7 +49,7 @@
         QPushButton:hover{background-color: #0095ff;
         border-style: outset;
         border-width: 1px;
-        border-radius: 5px;
+        border-radius: 8px;
         border-color: #e8e8e8;
         padding: 4px;
         color: #565050;
@@ -70,7 +73,7 @@
      <string notr="true">QStackedWidget{border-style: inset;
 border-width: 0.5px;
 border-radius: 5px;
-border-color: #FFF6F9;
+border-color: #FFFFFF;
 
 }
 </string>
@@ -106,7 +109,7 @@ border-color: #FFF6F9;
        <property name="styleSheet">
         <string notr="true">QFrame{
 	border-radius: 150px;
-	background-color: qconicalgradient(cx:0.5, cy:0.5, angle:90, stop:0.749 rgba(255, 0, 127, 0), stop:1.750 rgb(119, 240, 54));
+	background-color: linear-gradient(250deg, #48a4f2 78%, #024681 18%);
 }</string>
        </property>
        <property name="frameShape">
@@ -141,16 +144,16 @@ border-color: #FFF6F9;
       <widget class="QFrame" name="container">
        <property name="geometry">
         <rect>
-         <x>25</x>
-         <y>25</y>
-         <width>270</width>
-         <height>270</height>
+         <x>20</x>
+         <y>20</y>
+         <width>280</width>
+         <height>280</height>
         </rect>
        </property>
        <property name="styleSheet">
         <string notr="true">QFrame{
 	border-radius: 135px;
-	background-color: rgb(37, 18, 55);
+	background-color: #ffffff;
 }</string>
        </property>
        <property name="frameShape">
@@ -179,7 +182,7 @@ border-color: #FFF6F9;
            </property>
            <property name="styleSheet">
             <string notr="true">background-color: none;
-color: #FFFFFF</string>
+color: #024681;</string>
            </property>
            <property name="text">
             <string>&lt;p&gt;&lt;span style=&quot; font-size:68pt;&quot;&gt;0&lt;/span&gt;&lt;span style=&quot; font-size:58pt; vertical-align:super;&quot;&gt;%&lt;/span&gt;&lt;/p&gt;</string>
@@ -307,23 +310,23 @@ color: #FFFFFF</string>
    <widget class="QPushButton" name="minimizeButton">
     <property name="geometry">
      <rect>
-      <x>1010</x>
+      <x>990</x>
       <y>10</y>
-      <width>31</width>
-      <height>31</height>
+      <width>40</width>
+      <height>40</height>
      </rect>
     </property>
     <property name="styleSheet">
-     <string notr="true">QPushButton{background-color: rgb(94, 99, 97);
+     <string notr="true">QPushButton{background-color: #e8e8e8;
         border-style: outset;
         border-width:0;
         border-radius: 5px;
         border-color: #e8e8e8;
-        color: #fbfbfb;
+        color: #bfbfbf;
         font-size: 33px;
         font-weight: 900;}
         
-        QPushButton:hover{background-color:  rgb(94, 99, 97);
+        QPushButton:hover{background-color:  #e8e8e8;
         border-style: outset;
         border-width: 0px;
         border-radius: 5px;
@@ -346,7 +349,7 @@ color: #FFFFFF</string>
      </rect>
     </property>
     <property name="styleSheet">
-     <string notr="true">background-color: rgba(87, 96, 100,127);
+     <string notr="true">background-color: rgba(87, 96, 100,0);
         border-style: outset;
         border-width: 1px;
         border-radius: 5px;
@@ -374,7 +377,7 @@ color: #FFFFFF</string>
         border-radius: 5px;
         border-color: rgba(255, 255, 255, 0);
         padding: 4px;
-        color:rgb(7, 98, 184);
+        color:rgba(7, 98, 184,0);
         font-size: 13px;
         font-weight: 700;
 qproperty-alignment: AlignCenter;
@@ -400,7 +403,7 @@ qproperty-alignment: AlignCenter;
         border-radius: 5px;
         border-color: rgba(255, 255, 255, 0);
         padding: 4px;
-        color:rgb(7, 98, 184);
+        color:rgba(7, 98, 184,0);
         font-size: 13px;
         font-weight: 700;
 qproperty-alignment: AlignCenter;
@@ -426,7 +429,7 @@ qproperty-alignment: AlignCenter;
         border-radius: 5px;
         border-color: rgba(255, 255, 255, 0);
         padding: 4px;
-        color:rgb(7, 98, 184);
+        color:rgba(7, 98, 184,0);
         font-size: 13px;
         font-weight: 700;
 qproperty-alignment: AlignCenter;
@@ -439,10 +442,10 @@ qproperty-alignment: AlignCenter;
     <widget class="QLabel" name="micro_4">
      <property name="geometry">
       <rect>
-       <x>10</x>
-       <y>10</y>
-       <width>121</width>
-       <height>41</height>
+       <x>32</x>
+       <y>32</y>
+       <width>72</width>
+       <height>72</height>
       </rect>
      </property>
      <property name="maximumSize">
@@ -472,13 +475,7 @@ qproperty-alignment: AlignCenter;
      </rect>
     </property>
     <property name="styleSheet">
-     <string notr="true">background-color: rgb(7, 7, 7);
-
-        border-style: outset;
-        border-width: 1px;
-        border-radius: 5px;
-        border-color: rgba(255, 255, 255, 0);
-        padding: 4px;</string>
+     <string notr="true">QMainWindow{background-color:#ffffff;}</string>
     </property>
     <property name="text">
      <string/>

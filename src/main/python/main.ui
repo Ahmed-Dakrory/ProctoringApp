@@ -20,33 +20,33 @@
    <string>MainWindow</string>
   </property>
   <property name="styleSheet">
-   <string notr="true">QMainWindow{background-color: rgb(7, 7, 7);}</string>
+   <string notr="true">QMainWindow{background-color:rgb(255, 255, 255);}</string>
   </property>
   <widget class="QWidget" name="centralwidget">
    <widget class="QPushButton" name="predictButton">
     <property name="geometry">
      <rect>
-      <x>910</x>
-      <y>490</y>
-      <width>111</width>
-      <height>31</height>
+      <x>895</x>
+      <y>470</y>
+      <width>113</width>
+      <height>42</height>
      </rect>
     </property>
     <property name="styleSheet">
-     <string notr="true">QPushButton{background-color: #0095ff;
+     <string notr="true">QPushButton{background-color: #0573d1;
         border-style: outset;
         border-width: 1px;
-        border-radius: 5px;
+        border-radius: 8px;
         border-color: #e8e8e8;
         padding: 4px;
         color: #fbfbfb;
         font-size: 15px;
         font-weight: 700;}
         
-        QPushButton:hover{background-color: #0095ff;
+        QPushButton:hover{background-color: #009fff;
         border-style: outset;
         border-width: 1px;
-        border-radius: 5px;
+        border-radius: 8px;
         border-color: #e8e8e8;
         padding: 4px;
         color: #565050;
@@ -60,17 +60,17 @@
    <widget class="QStackedWidget" name="pagerWindow">
     <property name="geometry">
      <rect>
-      <x>190</x>
+      <x>150</x>
       <y>50</y>
       <width>811</width>
-      <height>391</height>
+      <height>411</height>
      </rect>
     </property>
     <property name="styleSheet">
      <string notr="true">QStackedWidget{border-style: inset;
 border-width: 0.5px;
 border-radius: 5px;
-border-color: #FFF6F9;
+border-color: #FFFFFF;
 
 }
 </string>
@@ -99,26 +99,43 @@ border-color: #FFF6F9;
       <property name="geometry">
        <rect>
         <x>270</x>
-        <y>10</y>
-        <width>291</width>
-        <height>41</height>
+        <y>350</y>
+        <width>511</width>
+        <height>51</height>
        </rect>
       </property>
       <property name="styleSheet">
-       <string notr="true">background-color: rgba(108, 103, 104, 127);
-        border-style: outset;
-        border-width: 1px;
-        border-radius: 5px;
-        border-color: rgba(255, 255, 255, 0);
-        padding: 4px;
-        color: rgb(255, 243, 247);
-        font-size: 15px;
-        font-weight: 700;
-qproperty-alignment: AlignCenter;
+       <string notr="true">
+font-family: Poppins;
+  font-size: 20px;
+  font-weight: bold;
+  font-style: normal;
+  line-height: 1.6;
+  letter-spacing: normal;
+  color: #343433;
 </string>
       </property>
       <property name="text">
        <string>Checking Internet Connection</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="internetCheckingNew">
+      <property name="geometry">
+       <rect>
+        <x>300</x>
+        <y>60</y>
+        <width>229</width>
+        <height>229</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string/>
+      </property>
+      <property name="pixmap">
+       <pixmap>imageface/internet@3x.png</pixmap>
+      </property>
+      <property name="scaledContents">
+       <bool>true</bool>
       </property>
      </widget>
     </widget>
@@ -145,27 +162,25 @@ qproperty-alignment: AlignCenter;
      <widget class="QLabel" name="checkDevice_3">
       <property name="geometry">
        <rect>
-        <x>270</x>
-        <y>10</y>
-        <width>341</width>
+        <x>220</x>
+        <y>350</y>
+        <width>451</width>
         <height>61</height>
        </rect>
       </property>
       <property name="styleSheet">
-       <string notr="true">background-color: rgba(108, 103, 104, 127);
-        border-style: outset;
-        border-width: 1px;
-        border-radius: 5px;
-        border-color: rgba(255, 255, 255, 0);
-        padding: 4px;
-        color: rgb(255, 243, 247);
-        font-size: 15px;
-        font-weight: 700;
-qproperty-alignment: AlignCenter;
+       <string notr="true">
+font-family: Poppins;
+  font-size: 20px;
+  font-weight: bold;
+  font-style: normal;
+  line-height: 1.6;
+  letter-spacing: normal;
+  color: #343433;
 </string>
       </property>
       <property name="text">
-       <string>Internet Checking Connection Success </string>
+       <string>Internet checking connection successful </string>
       </property>
      </widget>
     </widget>
@@ -173,23 +188,21 @@ qproperty-alignment: AlignCenter;
      <widget class="QLabel" name="checkDevice">
       <property name="geometry">
        <rect>
-        <x>220</x>
-        <y>40</y>
+        <x>270</x>
+        <y>350</y>
         <width>451</width>
         <height>51</height>
        </rect>
       </property>
       <property name="styleSheet">
-       <string notr="true">background-color: rgba(108, 103, 104, 127);
-        border-style: outset;
-        border-width: 1px;
-        border-radius: 5px;
-        border-color: rgba(255, 255, 255, 0);
-        padding: 4px;
-        color: rgb(255, 243, 247);
-        font-size: 15px;
-        font-weight: 700;
-qproperty-alignment: AlignCenter;
+       <string notr="true">
+font-family: Poppins;
+  font-size: 20px;
+  font-weight: bold;
+  font-style: normal;
+  line-height: 1.6;
+  letter-spacing: normal;
+  color: #343433;
 </string>
       </property>
       <property name="text">
@@ -199,7 +212,7 @@ qproperty-alignment: AlignCenter;
      <widget class="QGroupBox" name="groupBox_2">
       <property name="geometry">
        <rect>
-        <x>30</x>
+        <x>60</x>
         <y>170</y>
         <width>781</width>
         <height>201</height>
@@ -220,8 +233,8 @@ border-width: 0px;
         <rect>
          <x>10</x>
          <y>90</y>
-         <width>31</width>
-         <height>31</height>
+         <width>29</width>
+         <height>36</height>
         </rect>
        </property>
        <property name="maximumSize">
@@ -256,7 +269,7 @@ border-width: 0px;
         </size>
        </property>
        <property name="styleSheet">
-        <string notr="true">background-color: rgb(44, 211, 32);
+        <string notr="true">background-color:#024681;
 height:30px;
 margin-top:7px;
 margin-bottom:7px;</string>
@@ -276,8 +289,8 @@ margin-bottom:7px;</string>
         <rect>
          <x>90</x>
          <y>90</y>
-         <width>31</width>
-         <height>31</height>
+         <width>35</width>
+         <height>36</height>
         </rect>
        </property>
        <property name="maximumSize">
@@ -301,8 +314,8 @@ margin-bottom:7px;</string>
         <rect>
          <x>170</x>
          <y>80</y>
-         <width>51</width>
-         <height>51</height>
+         <width>44</width>
+         <height>40</height>
         </rect>
        </property>
        <property name="maximumSize">
@@ -337,7 +350,7 @@ margin-bottom:7px;</string>
         </size>
        </property>
        <property name="styleSheet">
-        <string notr="true">background-color: rgb(44, 211, 32);
+        <string notr="true">background-color:#024681;
 height:30px;
 margin-top:7px;
 margin-bottom:7px;</string>
@@ -368,7 +381,7 @@ margin-bottom:7px;</string>
         </size>
        </property>
        <property name="styleSheet">
-        <string notr="true">background-color:rgb(44, 211, 32);
+        <string notr="true">background-color:#024681;
         border-width: 3px;
         border-radius: 10px;
         border-color: rgba(255, 255, 255, 0);
@@ -401,7 +414,7 @@ margin-bottom:7px;</string>
         </size>
        </property>
        <property name="styleSheet">
-        <string notr="true">background-color: rgb(44, 211, 32);
+        <string notr="true">background-color:#024681;
 height:30px;
 margin-top:7px;
 margin-bottom:7px;</string>
@@ -432,7 +445,7 @@ margin-bottom:7px;</string>
         </size>
        </property>
        <property name="styleSheet">
-        <string notr="true">background-color:rgb(44, 211, 32);
+        <string notr="true">background-color:#024681;
         border-width: 3px;
         border-radius: 10px;
         border-color: rgba(255, 255, 255, 0);
@@ -465,7 +478,7 @@ margin-bottom:7px;</string>
         </size>
        </property>
        <property name="styleSheet">
-        <string notr="true">background-color:rgb(44, 211, 32);
+        <string notr="true">background-color:#024681;
         border-width: 3px;
         border-radius: 10px;
         border-color: rgba(255, 255, 255, 0);
@@ -498,7 +511,7 @@ margin-bottom:7px;</string>
         </size>
        </property>
        <property name="styleSheet">
-        <string notr="true">background-color:rgb(44, 211, 32);
+        <string notr="true">background-color:#024681;
         border-width: 3px;
         border-radius: 10px;
         border-color: rgba(255, 255, 255, 0);
@@ -534,7 +547,7 @@ margin-bottom:7px;</string>
         </size>
        </property>
        <property name="styleSheet">
-        <string notr="true">background-color: rgb(44, 211, 32);
+        <string notr="true">background-color:#024681;
 height:30px;
 margin-top:7px;
 margin-bottom:7px;</string>
@@ -554,8 +567,8 @@ margin-bottom:7px;</string>
         <rect>
          <x>280</x>
          <y>90</y>
-         <width>31</width>
-         <height>31</height>
+         <width>32</width>
+         <height>34</height>
         </rect>
        </property>
        <property name="maximumSize">
@@ -590,7 +603,7 @@ margin-bottom:7px;</string>
         </size>
        </property>
        <property name="styleSheet">
-        <string notr="true">background-color: rgb(44, 211, 32);
+        <string notr="true">background-color:#024681;
 height:30px;
 margin-top:7px;
 margin-bottom:7px;</string>
@@ -610,8 +623,8 @@ margin-bottom:7px;</string>
         <rect>
          <x>370</x>
          <y>90</y>
-         <width>31</width>
-         <height>31</height>
+         <width>26</width>
+         <height>34</height>
         </rect>
        </property>
        <property name="maximumSize">
@@ -646,7 +659,7 @@ margin-bottom:7px;</string>
         </size>
        </property>
        <property name="styleSheet">
-        <string notr="true">background-color:rgb(44, 211, 32);
+        <string notr="true">background-color:#024681;
         border-width: 3px;
         border-radius: 10px;
         border-color: rgba(255, 255, 255, 0);
@@ -668,8 +681,8 @@ margin-bottom:7px;</string>
         <rect>
          <x>660</x>
          <y>80</y>
-         <width>41</width>
-         <height>41</height>
+         <width>38</width>
+         <height>39</height>
         </rect>
        </property>
        <property name="maximumSize">
@@ -722,7 +735,7 @@ margin-bottom:7px;</string>
          </size>
         </property>
         <property name="styleSheet">
-         <string notr="true">background-color: rgb(44, 211, 32);
+         <string notr="true">background-color:#024681;
 height:30px;
 margin-top:7px;
 margin-bottom:7px;</string>
@@ -753,7 +766,7 @@ margin-bottom:7px;</string>
          </size>
         </property>
         <property name="styleSheet">
-         <string notr="true">background-color: rgb(44, 211, 32);
+         <string notr="true">background-color:#024681;
 height:30px;
 margin-top:7px;
 margin-bottom:7px;</string>
@@ -784,7 +797,7 @@ margin-bottom:7px;</string>
          </size>
         </property>
         <property name="styleSheet">
-         <string notr="true">background-color: rgb(44, 211, 32);
+         <string notr="true">background-color:#024681;
 height:30px;
 margin-top:7px;
 margin-bottom:7px;</string>
@@ -975,8 +988,8 @@ margin-bottom:7px;</string>
         <rect>
          <x>470</x>
          <y>80</y>
-         <width>41</width>
-         <height>41</height>
+         <width>38</width>
+         <height>39</height>
         </rect>
        </property>
        <property name="maximumSize">
@@ -1011,7 +1024,7 @@ margin-bottom:7px;</string>
         </size>
        </property>
        <property name="styleSheet">
-        <string notr="true">background-color:rgb(44, 211, 32);
+        <string notr="true">background-color:#024681;
         border-width: 3px;
         border-radius: 10px;
         border-color: rgba(255, 255, 255, 0);
@@ -1044,7 +1057,7 @@ margin-bottom:7px;</string>
         </size>
        </property>
        <property name="styleSheet">
-        <string notr="true">background-color:rgb(44, 211, 32);
+        <string notr="true">background-color:#024681;
         border-width: 3px;
         border-radius: 10px;
         border-color: rgba(255, 255, 255, 0);
@@ -1134,8 +1147,8 @@ margin-bottom:7px;</string>
         <rect>
          <x>570</x>
          <y>80</y>
-         <width>41</width>
-         <height>41</height>
+         <width>39</width>
+         <height>37</height>
         </rect>
        </property>
        <property name="maximumSize">
@@ -1190,8 +1203,8 @@ margin-bottom:7px;</string>
        <rect>
         <x>290</x>
         <y>10</y>
-        <width>341</width>
-        <height>351</height>
+        <width>351</width>
+        <height>401</height>
        </rect>
       </property>
       <property name="styleSheet">
@@ -1260,23 +1273,21 @@ qproperty-alignment: AlignCenter;
       <widget class="QLabel" name="followPose">
        <property name="geometry">
         <rect>
-         <x>80</x>
-         <y>270</y>
-         <width>161</width>
+         <x>-40</x>
+         <y>350</y>
+         <width>401</width>
          <height>31</height>
         </rect>
        </property>
        <property name="styleSheet">
-        <string notr="true">background-color: rgba(255, 255, 255, 2);
-        border-style: outset;
-        border-width: 1px;
-        border-radius: 5px;
-        border-color: rgba(255, 255, 255, 0);
-        padding: 4px;
-        color: rgb(255, 243, 247);
-        font-size: 15px;
-        font-weight: 700;
-qproperty-alignment: AlignCenter;
+        <string notr="true">
+font-family: Poppins;
+  font-size: 20px;
+  font-weight: bold;
+  font-style: normal;
+  line-height: 1.6;
+  letter-spacing: normal;
+  color: #343433;
 </string>
        </property>
        <property name="text">
@@ -1319,8 +1330,8 @@ qproperty-alignment: AlignCenter;
        <rect>
         <x>30</x>
         <y>10</y>
-        <width>691</width>
-        <height>371</height>
+        <width>701</width>
+        <height>401</height>
        </rect>
       </property>
       <property name="styleSheet">
@@ -1389,23 +1400,21 @@ qproperty-alignment: AlignCenter;
       <widget class="QLabel" name="followPoseHandAndId">
        <property name="geometry">
         <rect>
-         <x>270</x>
-         <y>330</y>
-         <width>281</width>
+         <x>240</x>
+         <y>310</y>
+         <width>361</width>
          <height>31</height>
         </rect>
        </property>
        <property name="styleSheet">
-        <string notr="true">background-color: rgba(255, 255, 255, 2);
-        border-style: outset;
-        border-width: 1px;
-        border-radius: 5px;
-        border-color: rgba(255, 255, 255, 0);
-        padding: 4px;
-        color: rgb(255, 243, 247);
-        font-size: 15px;
-        font-weight: 700;
-qproperty-alignment: AlignCenter;
+        <string notr="true">
+font-family: Poppins;
+  font-size: 20px;
+  font-weight: bold;
+  font-style: normal;
+  line-height: 1.6;
+  letter-spacing: normal;
+  color: #343433;
 </string>
        </property>
        <property name="text">
@@ -1415,29 +1424,29 @@ qproperty-alignment: AlignCenter;
       <widget class="QPushButton" name="repeatButton">
        <property name="geometry">
         <rect>
-         <x>550</x>
-         <y>40</y>
-         <width>41</width>
+         <x>270</x>
+         <y>350</y>
+         <width>301</width>
          <height>41</height>
         </rect>
        </property>
        <property name="styleSheet">
         <string notr="true">QPushButton{
-	background-color: #25BF0B;
+	background-color: #0573d1;
         border-style: outset;
         border-width: 1px;
-        border-radius: 20px;
         border-color: #e8e8e8;
         padding: 4px;
         color: #fbfbfb;
         font-size: 15px;
-        font-weight: 700;}
+        font-weight: 700;
+  border-radius: 8px;}
         
         QPushButton:hover{
-	background-color: #63F64A;
+	background-color: #0573d1;
         border-style: outset;
         border-width: 1px;
-        border-radius: 20px;
+        border-radius: 8px;
         border-color: #e8e8e8;
         padding: 4px;
         color: #565050;
@@ -1445,11 +1454,7 @@ qproperty-alignment: AlignCenter;
         font-weight: 700;}</string>
        </property>
        <property name="text">
-        <string/>
-       </property>
-       <property name="icon">
-        <iconset>
-         <normaloff>imageface/Repeat.png</normaloff>imageface/Repeat.png</iconset>
+        <string>Retake</string>
        </property>
        <property name="iconSize">
         <size>
@@ -1464,23 +1469,23 @@ qproperty-alignment: AlignCenter;
    <widget class="QPushButton" name="minimizeButton">
     <property name="geometry">
      <rect>
-      <x>1010</x>
+      <x>990</x>
       <y>10</y>
-      <width>31</width>
-      <height>31</height>
+      <width>40</width>
+      <height>40</height>
      </rect>
     </property>
     <property name="styleSheet">
-     <string notr="true">QPushButton{background-color: rgb(94, 99, 97);
+     <string notr="true">QPushButton{background-color: #e8e8e8;
         border-style: outset;
         border-width:0;
         border-radius: 5px;
         border-color: #e8e8e8;
-        color: #fbfbfb;
+        color: #bfbfbf;
         font-size: 33px;
         font-weight: 900;}
         
-        QPushButton:hover{background-color:  rgb(94, 99, 97);
+        QPushButton:hover{background-color:  #e8e8e8;
         border-style: outset;
         border-width: 0px;
         border-radius: 5px;
@@ -1498,12 +1503,12 @@ qproperty-alignment: AlignCenter;
      <rect>
       <x>0</x>
       <y>0</y>
-      <width>141</width>
+      <width>181</width>
       <height>541</height>
      </rect>
     </property>
     <property name="styleSheet">
-     <string notr="true">background-color: rgba(87, 96, 100,127);
+     <string notr="true">background-color: rgba(87, 96, 100,0);
         border-style: outset;
         border-width: 1px;
         border-radius: 5px;
@@ -1518,17 +1523,17 @@ qproperty-alignment: AlignCenter;
     <widget class="QPushButton" name="exitButton">
      <property name="geometry">
       <rect>
-       <x>110</x>
-       <y>510</y>
-       <width>21</width>
-       <height>21</height>
+       <x>40</x>
+       <y>470</y>
+       <width>113</width>
+       <height>42</height>
       </rect>
      </property>
      <property name="styleSheet">
-      <string notr="true">QPushButton{background-color:rgba(255, 91, 26, 235);
+      <string notr="true">QPushButton{background-color:rgb(224, 31, 61);
         border-style: outset;
         border-width:0;
-        border-radius: 5px;
+        border-radius: 8px;
         border-color: #e8e8e8;
         color: #fbfbfb;
         font-size: 13px;
@@ -1537,21 +1542,21 @@ qproperty-alignment: AlignCenter;
         QPushButton:hover{background-color:  rgb(94, 99, 97);
         border-style: outset;
         border-width: 0px;
-        border-radius: 5px;
+        border-radius: 8px;
         border-color: #e8e8e8;
         color: #565050;
         font-size: 13px;
         font-weight: 700;}</string>
      </property>
      <property name="text">
-      <string>X</string>
+      <string>Close</string>
      </property>
     </widget>
     <widget class="QLabel" name="username">
      <property name="geometry">
       <rect>
        <x>10</x>
-       <y>380</y>
+       <y>240</y>
        <width>121</width>
        <height>31</height>
       </rect>
@@ -1563,7 +1568,7 @@ qproperty-alignment: AlignCenter;
         border-radius: 5px;
         border-color: rgba(255, 255, 255, 0);
         padding: 4px;
-        color:rgb(7, 98, 184);
+        color:rgba(7, 98, 184,0);
         font-size: 13px;
         font-weight: 700;
 qproperty-alignment: AlignCenter;
@@ -1577,7 +1582,7 @@ qproperty-alignment: AlignCenter;
      <property name="geometry">
       <rect>
        <x>10</x>
-       <y>420</y>
+       <y>300</y>
        <width>121</width>
        <height>31</height>
       </rect>
@@ -1589,7 +1594,7 @@ qproperty-alignment: AlignCenter;
         border-radius: 5px;
         border-color: rgba(255, 255, 255, 0);
         padding: 4px;
-        color:rgb(7, 98, 184);
+        color:rgba(7, 98, 184,0);
         font-size: 13px;
         font-weight: 700;
 qproperty-alignment: AlignCenter;
@@ -1603,7 +1608,7 @@ qproperty-alignment: AlignCenter;
      <property name="geometry">
       <rect>
        <x>10</x>
-       <y>460</y>
+       <y>360</y>
        <width>121</width>
        <height>31</height>
       </rect>
@@ -1615,7 +1620,7 @@ qproperty-alignment: AlignCenter;
         border-radius: 5px;
         border-color: rgba(255, 255, 255, 0);
         padding: 4px;
-        color:rgb(7, 98, 184);
+        color:rgba(7, 98, 184,0);
         font-size: 13px;
         font-weight: 700;
 qproperty-alignment: AlignCenter;
@@ -1628,10 +1633,10 @@ qproperty-alignment: AlignCenter;
     <widget class="QLabel" name="micro_4">
      <property name="geometry">
       <rect>
-       <x>10</x>
-       <y>10</y>
-       <width>121</width>
-       <height>41</height>
+       <x>32</x>
+       <y>32</y>
+       <width>76</width>
+       <height>76</height>
       </rect>
      </property>
      <property name="maximumSize">
