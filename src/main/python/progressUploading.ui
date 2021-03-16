@@ -305,6 +305,55 @@ color: #FFFFFF</string>
       <zorder>circularProgress</zorder>
       <zorder>container</zorder>
      </widget>
+     <widget class="QLabel" name="note">
+      <property name="geometry">
+       <rect>
+        <x>50</x>
+        <y>350</y>
+        <width>681</width>
+        <height>20</height>
+       </rect>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>0</width>
+        <height>20</height>
+       </size>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>16777215</width>
+        <height>20</height>
+       </size>
+      </property>
+      <property name="font">
+       <font>
+        <family>MS Shell Dlg 2</family>
+        <pointsize>13</pointsize>
+        <weight>9</weight>
+        <italic>false</italic>
+        <bold>false</bold>
+       </font>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">QLabel{
+	border-radius: 10px;	
+	color: rgb(255, 63, 5);
+	font: 75 13pt &quot;MS Shell Dlg 2&quot;;
+	margin-left: 40px;
+	margin-right: 40px;
+}</string>
+      </property>
+      <property name="frameShape">
+       <enum>QFrame::NoFrame</enum>
+      </property>
+      <property name="text">
+       <string>Please don't try to close this window before uploading complete</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
+      </property>
+     </widget>
     </widget>
    </widget>
    <widget class="QPushButton" name="minimizeButton">

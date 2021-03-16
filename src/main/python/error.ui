@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>703</width>
-    <height>177</height>
+    <height>308</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -27,8 +27,8 @@
    <widget class="QPushButton" name="okError">
     <property name="geometry">
      <rect>
-      <x>390</x>
-      <y>120</y>
+      <x>410</x>
+      <y>230</y>
       <width>121</width>
       <height>41</height>
      </rect>
@@ -64,7 +64,7 @@
       <x>20</x>
       <y>50</y>
       <width>671</width>
-      <height>31</height>
+      <height>161</height>
      </rect>
     </property>
     <property name="styleSheet">
@@ -74,17 +74,26 @@
   font-style: normal;
   line-height: 1.71;
   letter-spacing: normal;
-  color: #343433;</string>
+  color: #343433;
+qproperty-alignment: AlignLeft;</string>
     </property>
     <property name="text">
-     <string>Please check this error ok?</string>
+     <string>Please check this error ok?
+    -  Please check this error ok?
+    -  Please check this error ok?
+    -  Please check this error ok?
+    -  Please check this error ok?
+    -  Please check this error ok?
+    -  Please check this error ok?
+    -  Please check this error ok?
+    -  Please check this error ok?</string>
     </property>
    </widget>
    <widget class="QPushButton" name="close">
     <property name="geometry">
      <rect>
-      <x>220</x>
-      <y>120</y>
+      <x>140</x>
+      <y>230</y>
       <width>121</width>
       <height>41</height>
      </rect>

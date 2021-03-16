@@ -1210,9 +1210,11 @@ class GUI(QMainWindow):
             # dataNew = {"token": self.token}
             print("------------------------------------------------")
             print(self.examId)
-            UrlPostData = 'http://new.tproctor.teqnia-tech.com/api/proctor-app/test-requirements/'+self.examId
-            response = requests.get(UrlPostData,headers=headers,timeout=1)
-            
+            try:
+                UrlPostData = 'http://new.tproctor.teqnia-tech.com/api/proctor-app/test-requirements/'+self.examId
+                response = requests.get(UrlPostData,headers=headers,timeout=1)
+            except:
+                self.goToErrorPageWebsite("Please check internet")
             print("-----------Request--------------")
             
             self.TestName = response.json()['test']['name']
@@ -1907,9 +1909,25 @@ class ThreadDeviceCheckConnection(QThread):
                 return False
 
     def CheckDevices(self):
-        
+        self.WindowPanel.bar_cam.setVisible(False)
+        self.WindowPanel.bar_mouse.setVisible(False)
+        self.WindowPanel.bar_key.setVisible(False)
+        self.WindowPanel.bar_speaker.setVisible(False)
+        self.WindowPanel.bar_micro.setVisible(False)
+        self.WindowPanel.bar_system.setVisible(False)
+        self.WindowPanel.bar_hard.setVisible(False)
+        self.WindowPanel.bar_screen.setVisible(False)
+
+        self.WindowPanel.success_cam.setVisible(False)
+        self.WindowPanel.success_mouse.setVisible(False)
+        self.WindowPanel.success_key.setVisible(False)
+        self.WindowPanel.success_speaker.setVisible(False)
+        self.WindowPanel.success_micro.setVisible(False)
+        self.WindowPanel.success_hard.setVisible(False)
+        self.WindowPanel.success_screen.setVisible(False)
+
         self.checkResult = True
-        
+        listOfErrors = []
         # Check Camera
         cap = cv2.VideoCapture(0) 
         if not (cap is None or not cap.isOpened()):
@@ -1917,6 +1935,7 @@ class ThreadDeviceCheckConnection(QThread):
             self.WindowPanel.success_cam.setVisible(True)
         else:
             self.checkResult = False
+            listOfErrors.append("\n    -  Check the Camera ")
 
         loop = QEventLoop()
         QTimer.singleShot(500, loop.quit)
@@ -1930,6 +1949,7 @@ class ThreadDeviceCheckConnection(QThread):
             self.WindowPanel.success_mouse.setVisible(True)
         else:
             self.checkResult = False
+            listOfErrors.append("\n    -  Check the Mouse ")
             
         loop = QEventLoop()
         QTimer.singleShot(500, loop.quit)
@@ -1942,6 +1962,7 @@ class ThreadDeviceCheckConnection(QThread):
             self.WindowPanel.success_key.setVisible(True)
         else:
             self.checkResult = False
+            listOfErrors.append("\n    -  Check the Keyboard ")
        
         loop = QEventLoop()
         QTimer.singleShot(500, loop.quit)
@@ -1952,6 +1973,7 @@ class ThreadDeviceCheckConnection(QThread):
             self.WindowPanel.success_speaker.setVisible(True)
         else:
             self.checkResult = False
+            listOfErrors.append("\n    -  Check the Speaker ")
         
         loop = QEventLoop()
         QTimer.singleShot(500, loop.quit)
@@ -1963,6 +1985,7 @@ class ThreadDeviceCheckConnection(QThread):
             self.WindowPanel.success_micro.setVisible(True)
         else:
             self.checkResult = False
+            listOfErrors.append("\n    -  Check the Microphone ")
         
         loop = QEventLoop()
         QTimer.singleShot(500, loop.quit)
@@ -1980,6 +2003,7 @@ class ThreadDeviceCheckConnection(QThread):
             self.WindowPanel.success_hard.setVisible(True)
         else:
             self.checkResult = False
+            listOfErrors.append("\n    -  Check Space in C: Drive ")
 
        
         
@@ -1994,6 +2018,7 @@ class ThreadDeviceCheckConnection(QThread):
             self.WindowPanel.success_screen.setVisible(True)
         else:
             self.checkResult = False
+            listOfErrors.append("\n    -  Check if there is more or less than one Monitor connected ")
 
         
         loop = QEventLoop()
@@ -2006,20 +2031,26 @@ class ThreadDeviceCheckConnection(QThread):
             self.WindowPanel.bar_system.setVisible(True)
         else:
             self.checkResult = False
+            listOfErrors.append("\n    -  You are use Virtual Machine ")
         
         loop = QEventLoop()
         QTimer.singleShot(1000, loop.quit)
         loop.exec_()
+        return listOfErrors
+            
 
 
 
     def run(self):
-        self.CheckDevices()
+        listOfErrors = self.CheckDevices()
         if self.checkResult:
             # here we will show the list of the closed apps so we will proceed or close the App
             self.openListOfClosingApp.emit("Nothing")
         else:
-            self.ShowErrorPanel.emit("Please Check the unComplete Steps")
+            allStr = "Please Check the unComplete Steps"
+            for item in listOfErrors:
+                allStr +=item
+            self.ShowErrorPanel.emit(allStr)
         
 
 # Camera For Pose Thread
@@ -2734,7 +2765,7 @@ class ThreadCameraId(QThread):
     
             
 # Main Camera for video exam
-Blur_Threshold=125
+Blur_Threshold=13
 Dark_Threshold=75
 
 class ThreadCameraVideo(QThread):
@@ -2848,16 +2879,20 @@ class ThreadCameraVideo(QThread):
                             
                         
                             fm2=np.mean(sample_frame)
-                            
+                            # print(fm2,fm)
                             if fm2 < Dark_Threshold:
                                 self.textLight = "Room too dark"
                                 self.changeStrLight.emit(self.textLight)
-                            elif fm2 > Dark_Threshold+50:
+                            elif fm2 > Dark_Threshold+30:
                                 self.textLight="Low the light"
+                                self.changeStrLight.emit(self.textLight)
+                            elif fm < Blur_Threshold:
+                                self.textLight="your are not clear"
                                 self.changeStrLight.emit(self.textLight)
                             else:
                                 self.textLight=""
                                 self.changeStrLight.emit(self.textLight)
+
 
                             
 
@@ -2934,7 +2969,7 @@ if __name__ == '__main__':
     
     runTheApp = False
     # token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NywiaXNzIjoiQXBwIiwiaWF0IjoxNjExMDYyNjU2MDU4LCJleHAiOjE2MTEwNjUyNDgwNTh9.6hqn2LPcMqGK9BTYqVok2r92pIjqix7rzK7RN-lZGBY' #None
-    # examId = '153'
+    # examId = '197'
     try:
         argumentData = sys.argv[1]
         token = argumentData.split("@/@")[1]
