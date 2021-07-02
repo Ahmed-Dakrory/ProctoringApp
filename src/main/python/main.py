@@ -2968,8 +2968,8 @@ if __name__ == '__main__':
     set_reg(r"Software\\Classes\\Proctoring\\Shell\\Open\\command",'', '\"'+dir_path+'\\Proctoring.exe\"  "%0" "%1" "%2')
     
     runTheApp = False
-    # token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NywiaXNzIjoiQXBwIiwiaWF0IjoxNjExMDYyNjU2MDU4LCJleHAiOjE2MTEwNjUyNDgwNTh9.6hqn2LPcMqGK9BTYqVok2r92pIjqix7rzK7RN-lZGBY' #None
-    # examId = '197'
+    # token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NywiaXNzIjoiQXBwIiwiaWF0IjoxNjE3ODc5MzY4LCJleHAiOjE2MjA0NzEzNjh9.rgJ5jAdbeRF9jQrbDhRNbi_jRcyfkOZpUFCdCnw9reI' #None
+    # examId = '230'
     try:
         argumentData = sys.argv[1]
         token = argumentData.split("@/@")[1]
